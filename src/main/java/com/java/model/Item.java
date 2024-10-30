@@ -13,19 +13,20 @@ import java.util.Set;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Inheritance(strategy = InheritanceType.JOINED)
 public class Item implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "item_id")
     private Long itemId;
 
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @Column(name = "created_by", length = 255, nullable = false)
+    @Column(name = "created_by", length = 255)
     private String createdBy;
 
-    @Column(name = "is_public", nullable = false)
+    @Column(name = "is_public")
     private Boolean isPublic;
 
     @Column(name = "updated_at")
@@ -35,7 +36,7 @@ public class Item implements Serializable {
     private String updatedBy;
 
     @ManyToOne
-    @JoinColumn(name = "owner_id", nullable = false)
+    @JoinColumn(name = "owner_id")
     private User owner;
 
     @OneToMany(mappedBy = "item", fetch = FetchType.LAZY)

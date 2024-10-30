@@ -18,7 +18,6 @@ public class Router {
     public void routeCommand(String command, PrintWriter out, Socket controlSocket) {
         String[] commandParts = command.split(" ", 2);
         Command commandType = Command.fromString(commandParts[0]);
-        String commandLine = command.trim();
         if (commandType == null) {
             out.println(ResponseCode.NOT_IMPLEMENTED);
             return;

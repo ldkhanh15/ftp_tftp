@@ -1,7 +1,10 @@
 package com.java.Service;
 
-import com.java.model.Item;
+import com.java.dto.NodeDTO;
+
+import java.util.List;
 
 public interface ItemService {
-    Item testItem(Long id);
+    List<NodeDTO> getItemByParentId(Long id);
+    long getFolderRootId();
 }

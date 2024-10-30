@@ -9,7 +9,7 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Inheritance(strategy = InheritanceType.JOINED)
+
 public class AccessItem{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -9,7 +9,7 @@ import java.util.List;
 @Component
 public class UserController {
     private final UserService userService;
-    public boolean login(String username, String password, Role role) {
+    public boolean  login(String username, String password, Role role) {
         try {
             return userService.login(username, password, role);
         } catch (Exception e){
@@ -20,15 +20,7 @@ public class UserController {
 
     public List<Object[]> getUsers() {
         try {
-            var users = userService.getAllUser();
-                return users.stream().map(
-                        u -> new Object[]{
-                                u.getId(),
-                                u.getUsername(),
-                                u.getPassword(),
-                                u.getRole()
-                        }
-                ).toList();
+            return userService.getAllUser();
         }
         catch (Exception e){
             System.out.println(e.getMessage());

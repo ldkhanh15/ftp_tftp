@@ -1,9 +1,9 @@
 package com.java.FTPServer;
 
 import com.java.FTPServer.enums.Command;
+import com.java.GUI.view.DirectionTreeView;
 import com.java.GUI.view.LoginView;
 import com.java.Service.ItemService;
-import com.java.controller.UserController;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -16,21 +16,27 @@ import java.util.concurrent.Executors;
 @Component
 @RequiredArgsConstructor
 public class Server {
-    private static final int PORT = 21;
+    private static final int PORT = ConstFTP.PORT;
     private final Router router;
     private final LoginView loginView;
+    private final DirectionTreeView directionTreeView;
+
     public void start() {
+
         javax.swing.SwingUtilities.invokeLater(() -> {
-            loginView.setVisible(true);
+            directionTreeView.setVisible(true);
         });
+//        javax.swing.SwingUtilities.invokeLater(() -> {
+//            loginView.setVisible(true);
+//        });
 
         ExecutorService executor = Executors.newFixedThreadPool(10); // Tạo thread pool
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             System.out.println("FTP Server started on port " + PORT);
-            File rootDirectory = new File(Const.ROOT_DIR);
+            File rootDirectory = new File(ConstFTP.ROOT_DIR);
             if (!rootDirectory.exists()) {
                 rootDirectory.mkdirs();  // Tạo thư mục nếu không tồn tại
-                System.out.println("Created directory: " + Const.ROOT_DIR);
+                System.out.println("Created directory: " + ConstFTP.ROOT_DIR);
             }
             while (true) {
                 Socket clientSocket = serverSocket.accept(); // Chấp nhận kết nối mới

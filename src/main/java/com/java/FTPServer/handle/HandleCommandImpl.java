@@ -1,6 +1,6 @@
 package com.java.FTPServer.handle;
 
-import com.java.FTPServer.Const;
+import com.java.FTPServer.ConstFTP;
 import com.java.FTPServer.enums.ResponseCode;
 import com.java.controller.UserController;
 import com.java.enums.Role;
@@ -14,7 +14,7 @@ import java.net.Socket;
 @Component
 public class HandleCommandImpl implements HandleCommand {
     private final UserController userController;
-    private final String rootDir = Const.ROOT_DIR;
+    private final String rootDir = ConstFTP.ROOT_DIR;
 
     @Override
     public void storeFile(String filename, Socket dataSocket, PrintWriter out) {
@@ -31,5 +31,4 @@ public class HandleCommandImpl implements HandleCommand {
             out.println(ResponseCode.NOT_LOGGED_IN);
         }
     }
-
 }
