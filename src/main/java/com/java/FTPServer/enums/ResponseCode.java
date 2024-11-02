@@ -23,8 +23,10 @@ public enum ResponseCode {
     CANNOT_CHANGE_DIRECTORY(550, "Failed to change directory."), // Mã 550
     CANNOT_OPEN_DATA_CONNECTION(425, "Can't open data connection."), // Mã 425
     ACTION_NOT_TAKEN(450, "Requested action not taken. File unavailable, not found, or no access."), // Mã 450
-    ALREADY_EXISTS(553, "Requested action not taken. File already exists."), // Mã 553
-    FILE_TYPE_SET(200, "File type set to I."); // Mã 200 cho loại file
+    ALREADY_EXISTS(553, "Requested action not taken. File already exists."),
+    FILE_COMPLETED_TRANSFER(226,"File transfer completed"),
+    FILE_STARTING_TRANSFER(150,"Recieved file transfer");
+
     private final int code;
     private final String message;
 
@@ -33,6 +35,10 @@ public enum ResponseCode {
         this.message = message;
     }
 
+
+    public String getResponse(){
+        return code+" "+message;
+    }
     public int getCode() {
         return code;
     }

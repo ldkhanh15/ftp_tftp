@@ -1,7 +1,6 @@
-package com.java.Service;
+package com.java.service;
 
 import com.java.enums.Role;
-import com.java.model.User;
 
 import java.util.List;
 

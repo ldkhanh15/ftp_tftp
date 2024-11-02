@@ -1,5 +1,5 @@
 package com.java.controller;
-import com.java.Service.UserService;
+import com.java.service.UserService;
 import com.java.enums.Role;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

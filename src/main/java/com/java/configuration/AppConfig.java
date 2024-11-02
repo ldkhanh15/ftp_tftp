@@ -1,10 +1,7 @@
 package com.java.configuration;
 
 import jakarta.annotation.Resource;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.PropertySource;
+import org.springframework.context.annotation.*;
 import org.springframework.core.env.Environment;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
@@ -20,6 +17,7 @@ import java.util.Properties;
 @ComponentScan(basePackages = "com.java")
 @EnableJpaRepositories(basePackages = "com.java.repository")
 @PropertySource("classpath:application.properties")
+@EnableAspectJAutoProxy
 public class AppConfig {
 
     @Resource

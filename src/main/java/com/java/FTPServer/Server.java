@@ -3,7 +3,6 @@ package com.java.FTPServer;
 import com.java.FTPServer.enums.Command;
 import com.java.GUI.view.DirectionTreeView;
 import com.java.GUI.view.LoginView;
-import com.java.Service.ItemService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -26,11 +25,9 @@ public class Server {
         javax.swing.SwingUtilities.invokeLater(() -> {
             directionTreeView.setVisible(true);
         });
-//        javax.swing.SwingUtilities.invokeLater(() -> {
-//            loginView.setVisible(true);
-//        });
 
-        ExecutorService executor = Executors.newFixedThreadPool(10); // Tạo thread pool
+        ExecutorService executor = Executors.newFixedThreadPool(10);
+
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             System.out.println("FTP Server started on port " + PORT);
             File rootDirectory = new File(ConstFTP.ROOT_DIR);
@@ -45,46 +42,60 @@ public class Server {
             }
         } catch (IOException e) {
             e.printStackTrace();
-        } finally {
-            executor.shutdown(); // Đóng executor khi server dừng
         }
+
     }
     private static class ClientHandler implements Runnable {
-        private final Socket controlSocket; // Kết nối của client
-        private final BufferedReader in; // Đọc dữ liệu từ client
-        private final PrintWriter out; // Gửi dữ liệu đến client
-        private final Router router; // Router để xử lý lệnh
+        private final Socket controlSocket; // Client connection
+        private final Router router; // Router for command handling
+        private DataInputStream dataInputStream; // Input stream for the client
+        private DataOutputStream dataOutputStream; // Output stream for the client
 
-        public ClientHandler(Socket controlSocket, Router router) throws IOException {
+        public ClientHandler(Socket controlSocket, Router router) {
             this.controlSocket = controlSocket;
             this.router = router;
-            this.in = new BufferedReader(new InputStreamReader(controlSocket.getInputStream())); // Khởi tạo BufferedReader
-            this.out = new PrintWriter(controlSocket.getOutputStream(), true); // Khởi tạo PrintWriter
         }
 
         @Override
         public void run() {
             try {
-                out.println("220 Welcome to Simple FTP Server"); // Gửi thông báo chào mừng
+                // Initialize streams outside the loop
+                dataInputStream = new DataInputStream(controlSocket.getInputStream());
+                dataOutputStream = new DataOutputStream(controlSocket.getOutputStream());
+//                dataOutputStream.writeUTF("220 Welcome to Simple FTP Server"); // Send welcome message
 
                 String command;
-                while ((command = in.readLine()) != null) {
-                    System.out.println("Received command: " + command); // In lệnh nhận được
-                    router.routeCommand(command, out, controlSocket); // Chuyển lệnh cho router xử lý
-                    if (command.equalsIgnoreCase(Command.QUIT.toString())) { // Kiểm tra lệnh QUIT
-                        break;
+                while (true) {
+                    try {
+                        command = dataInputStream.readUTF(); // Read command from client
+                        System.out.println("Received command: " + command);
+                        router.routeCommand(command, controlSocket);
+
+                        if (command.equalsIgnoreCase(Command.QUIT.toString())) {
+                            break; // Exit the loop if QUIT command is received
+                        }
+                    } catch (EOFException e) {
+                        System.out.println("Client disconnected unexpectedly.");
+                        break; // Break on unexpected disconnect
+                    } catch (IOException e) {
+                        System.out.println("Error reading command: " + e.getMessage());
+                        break; // Break on read errors
                     }
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                e.printStackTrace(); // Handle exceptions during stream initialization
             } finally {
+                // Close resources in the finally block to ensure they are closed regardless of what happens
                 try {
-                    controlSocket.close(); // Đóng kết nối khi hoàn tất
-                    System.err.println("Client disconnected");
+                    if (dataInputStream != null) dataInputStream.close();
+                    if (dataOutputStream != null) dataOutputStream.close();
+                    controlSocket.close(); // Close the socket when done
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
         }
     }
+
+
 }
