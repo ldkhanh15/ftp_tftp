@@ -1,10 +1,10 @@
-package com.java.Service;
+package com.java.service;
 
 import com.java.dto.NodeDTO;
 
 import java.util.List;
 
-public interface ItemService {
+public interface ItemService{
     List<NodeDTO> getItemByParentId(Long id);
     long getFolderRootId();
 }

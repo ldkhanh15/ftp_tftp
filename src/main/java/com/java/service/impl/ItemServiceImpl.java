@@ -1,6 +1,6 @@
-package com.java.Service.impl;
+package com.java.service.impl;
 
-import com.java.Service.ItemService;
+import com.java.service.ItemService;
 import com.java.dto.NodeDTO;
 import com.java.enums.ItemType;
 import com.java.exception.DataNotFoundException;
@@ -14,7 +14,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 @RequiredArgsConstructor
 @Component
