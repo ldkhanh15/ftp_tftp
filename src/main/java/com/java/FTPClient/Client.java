@@ -1,160 +1,202 @@
 package com.java.FTPClient;
-
-import javax.swing.*;
-import java.awt.*;
 import java.io.*;
+import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Scanner;
 
-public class Client extends JFrame {
-    private static final String SERVER = "localhost";
-    private static final int PORT = 21;
+public class Client {
+    private Socket controlSocket;
+    private PrintWriter controlOutWriter;
+    private BufferedReader controlIn;
+    private ServerSocket dataSocket;
+    private Socket dataConnection;
+    private String serverAddress;
+    private int controlPort;
+    private int dataPort;
+    private String fileSeparator = "/";
 
-    private JTextField downloadFileField;
-    private JTextArea logArea;
-
-    public Client() {
-        setupGUI();
+    public Client(String serverAddress, int controlPort, int dataPort) {
+        this.serverAddress = serverAddress;
+        this.controlPort = controlPort;
+        this.dataPort = dataPort;
     }
 
-    private void setupGUI() {
-        setTitle("FTP Client");
-        setSize(400, 300);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    public void connect() throws IOException {
+        // Establish control connection
+        controlSocket = new Socket(serverAddress, controlPort);
+        controlOutWriter = new PrintWriter(controlSocket.getOutputStream(), true);
+        controlIn = new BufferedReader(new InputStreamReader(controlSocket.getInputStream()));
 
-        JPanel panel = new JPanel(new GridLayout(3, 1));
-
-        // Upload Section
-        JPanel uploadPanel = new JPanel(new BorderLayout());
-        JButton uploadButton = new JButton("Select and Upload File");
-        uploadButton.addActionListener(e -> uploadFile());
-        uploadPanel.add(uploadButton, BorderLayout.CENTER);
-
-        // Download Section
-        JPanel downloadPanel = new JPanel(new BorderLayout());
-        downloadFileField = new JTextField("desktop.ini");
-        JButton downloadButton = new JButton("Download File");
-        downloadButton.addActionListener(e -> downloadFile());
-        downloadPanel.add(new JLabel("File Name to Download:"), BorderLayout.NORTH);
-        downloadPanel.add(downloadFileField, BorderLayout.CENTER);
-        downloadPanel.add(downloadButton, BorderLayout.EAST);
-        // User List Section
-        JButton getUsersButton = new JButton("Get Users List");
-        getUsersButton.addActionListener(e -> requestUserList());
-        panel.add(getUsersButton);
-        // Log Area
-        logArea = new JTextArea();
-        logArea.setEditable(false);
-        JScrollPane logScrollPane = new JScrollPane(logArea);
-
-        panel.add(uploadPanel);
-        panel.add(downloadPanel);
-        add(panel, BorderLayout.NORTH);
-        add(logScrollPane, BorderLayout.CENTER);
-
-        setVisible(true);
+        // Display server greeting
+        System.out.println("Server: " + controlIn.readLine());
     }
 
-    private void log(String message) {
-        SwingUtilities.invokeLater(() -> logArea.append(message + "\n"));
+    public void sendCommand(String command) {
+        controlOutWriter.println(command);
     }
-    private void requestUserList() {
-        try (Socket socket = new Socket(SERVER, PORT);
-             DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
-             DataInputStream dataInputStream = new DataInputStream(socket.getInputStream())) {
 
-            // Send GET_USERS command
-            dataOutputStream.writeUTF("GET_USERS");
+    public String readServerResponse() throws IOException {
+        return controlIn.readLine();
+    }
+    private void active() throws IOException {
+        dataSocket = new ServerSocket(dataPort);
+        // Send file to server
+        int p1 = dataPort / 256;
+        int p2 = dataPort % 256;
+        sendCommand("PORT 127,0,0,1," + p1 + "," + p2);
+        System.out.println("Server: " + readServerResponse());
 
-            // Read the user list
-            int userCount = dataInputStream.readInt();
-            log("Number of users: " + userCount);
+        dataConnection = dataSocket.accept();
+    }
 
-            for (int i = 0; i < userCount; i++) {
-                String username = dataInputStream.readUTF();
-                log("User: " + username);
-                // Add more fields if needed
-            }
-        } catch (IOException e) {
-            log("Error retrieving user list: " + e.getMessage());
+    public void passive() throws IOException {
+        sendCommand("PASV");
+        String response = readServerResponse();
+        String[] parts = response.split("\\(|\\)")[1].split(",");
+
+        String ip = parts[0] + "." + parts[1] + "." + parts[2] + "." + parts[3];
+        int port = Integer.parseInt(parts[4]) * 256 + Integer.parseInt(parts[5]);
+
+
+        dataConnection = new Socket(ip, port);
+        System.out.println("Connecting to IP: " + ip + " on port: " + port);
+    }
+    public void retrieveFile() throws IOException {
+        // Get the user's home directory and set the download folder
+        String downloadDir = System.getProperty("user.home") + "/downloads/";
+        System.out.println(downloadDir);
+        // Ensure the directory exists
+        File directory = new File(downloadDir);
+        if (!directory.exists()) {
+            directory.mkdirs(); // Create directory if it doesn't exist
         }
-    }
-    private void uploadFile() {
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("Select File to Upload");
-        int result = fileChooser.showOpenDialog(this);
 
-        if (result == JFileChooser.APPROVE_OPTION) {
-            File file = fileChooser.getSelectedFile();
-
-            try (Socket socket = new Socket(SERVER, PORT);
-                 DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
-                 FileInputStream fileInputStream = new FileInputStream(file)) {
-                log("Connected to FTP server for uploading.");
-
-                // Send upload command and file name
-                dataOutputStream.writeUTF("STOR "+file.getName());
-//                dataOutputStream.writeUTF("DOWNLOAD");
-//                dataOutputStream.writeUTF(file.getName());
-                // Send file content
-                byte[] buffer = new byte[4096];
-                int bytesRead;
-                while ((bytesRead = fileInputStream.read(buffer)) != -1) {
-                    dataOutputStream.write(buffer, 0, bytesRead);
-                }
-
-                log("File uploaded to server successfully.");
-            } catch (IOException e) {
-                log("Upload error: " + e.getMessage());
+        int type = 0;
+        Scanner scanner = new Scanner(System.in);
+        while (type != 1 && type != 2) {
+            System.out.println("Chon type:");
+            System.out.println("1. Active");
+            System.out.println("2. Passive");
+            type = scanner.nextInt();
+            if (type == 1 || type == 2) {
+                break;
             }
+        }
+        if (type == 1) {
+            active();
         } else {
-            log("File upload canceled.");
+            passive();
         }
-    }
+        sendCommand("RETR " + "actor_movies.txt");
+        System.out.println("Server: " + readServerResponse());
 
-    private void downloadFile() {
-        String fileName = downloadFileField.getText();
-        if (fileName.isEmpty()) {
-            log("Please enter a file name to download.");
-            return;
-        }
+        // Create the output file with the specified download directory
+        try (InputStream dataIn = dataConnection.getInputStream();
+             FileOutputStream fileOut = new FileOutputStream(downloadDir + "actor_movies.txt")) {
 
-        String userHome = System.getProperty("user.home");
-        File downloadFolder = new File(userHome, "Downloads");
-        File downloadedFile = new File(downloadFolder, "downloaded_" + fileName);
-
-        try (Socket socket = new Socket(SERVER, PORT);
-             DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
-             DataInputStream dataInputStream = new DataInputStream(socket.getInputStream())) {
-
-            log("Connected to FTP server for downloading.");
-
-            // Send download command and file name
-            dataOutputStream.writeUTF("RETR " + fileName);
-
-            // Check server response for file availability
-            String serverResponse = dataInputStream.readUTF();
-            log("Server response: " + serverResponse);
-
-            if ("FILE_FOUND".equals(serverResponse)) {
-                try (FileOutputStream fileOutputStream = new FileOutputStream(downloadedFile)) {
-                    byte[] buffer = new byte[4096];
-                    int bytesRead;
-                    while ((bytesRead = dataInputStream.read(buffer)) != -1) {
-                        fileOutputStream.write(buffer, 0, bytesRead);
-                    }
-                }
-                log("File downloaded successfully as " + downloadedFile.getAbsolutePath());
-            } else {
-                log("File not found on server.");
+            byte[] buffer = new byte[1024];
+            int bytesRead;
+            while ((bytesRead = dataIn.read(buffer)) != -1) {
+                fileOut.write(buffer, 0, bytesRead);
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-            log("Download error: " + e.getMessage());
+            System.out.println("File download complete.");
+        }
+        System.out.println("Server: " + readServerResponse());
+        if (dataSocket != null) {
+            dataSocket.close();
+        }
+        if (dataConnection != null) {
+            dataConnection.close();
         }
     }
+    public void storeFile() throws IOException {
+        int type = 0;
+        Scanner scanner = new Scanner(System.in);
+        while (type != 1 && type != 2) {
+            System.out.println("Chon type:");
+            System.out.println("1. Active");
+            System.out.println("2. Passive");
+            type = scanner.nextInt();
+            if (type == 1 || type == 2) {
+                break;
+            }
+        }
+        if (type == 1) {
+            active();
+        } else {
+            passive();
+        }
+        sendCommand("STOR " + "actor_movies.txt");
+        String response = readServerResponse();
+        System.out.println("Server: " + response);
+        if (!response.equalsIgnoreCase("File already exists")) {
 
+            try (FileInputStream fileIn = new FileInputStream("C:\\Users\\MY DREAMS\\Downloads\\actor_movies.txt");
+                 OutputStream dataOut = dataConnection.getOutputStream()) {
+
+                byte[] buffer = new byte[1024];
+                int bytesRead;
+                while ((bytesRead = fileIn.read(buffer)) != -1) {
+                    dataOut.write(buffer, 0, bytesRead);
+                }
+                System.out.println("File upload complete.");
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.out.println(e.getMessage());
+            }
+            System.out.println("Server: " + readServerResponse());
+        }
+        if (dataSocket != null) {
+            dataSocket.close();
+        }
+        if (dataConnection != null) {
+            dataConnection.close();
+        }
+
+    }
+
+    public void closeConnections() throws IOException {
+        if (dataSocket != null) dataSocket.close();
+        if (controlSocket != null) {
+            sendCommand("QUIT");
+            controlSocket.close();
+        }
+        System.out.println("Disconnected from server.");
+    }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(Client::new);
+        Scanner scanner = new Scanner(System.in);
+        Client ftpClient = new Client("localhost", 21, 5000);
+
+        try {
+            ftpClient.connect();
+
+            while (true) {
+                System.out.println("Choose an option: \n1. Retrieve file\n2. Store file\n3. Quit");
+                int choice = scanner.nextInt();
+                scanner.nextLine(); // Consume newline
+
+                switch (choice) {
+                    case 1:
+                        ftpClient.retrieveFile();
+                        break;
+
+                    case 2:
+                        ftpClient.storeFile();
+                        break;
+
+                    case 3:
+                        ftpClient.closeConnections();
+                        scanner.close();
+                        return;
+
+                    default:
+                        System.out.println("Invalid choice. Try again.");
+                }
+            }
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+            e.printStackTrace();
+        }
     }
 }
