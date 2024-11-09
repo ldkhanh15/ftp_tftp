@@ -3,6 +3,7 @@ package com.java.FTPServer;
 import com.java.FTPServer.enums.Command;
 import com.java.FTPServer.enums.ResponseCode;
 import com.java.FTPServer.handle.CommandHandler;
+import com.java.FTPServer.handle.CommandHandlerImpl;
 import com.java.controller.UserController;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -10,53 +11,52 @@ import org.springframework.stereotype.Component;
 import java.io.*;
 import java.net.Socket;
 
-@Component
-@RequiredArgsConstructor
 public class Router {
-    private final CommandHandler commandHandler;
-    private String temporaryUsername;
-    public void routeCommand(String command, Socket controlSocket) throws IOException {
-       try(DataOutputStream dataOutputStream=new DataOutputStream(controlSocket.getOutputStream());
-       DataInputStream dataInputStream = new DataInputStream(controlSocket.getInputStream())){
+    private final CommandHandlerImpl commandHandler;
+    private PrintWriter controlOutWriter;
+    public Router(){
+        this.commandHandler=new CommandHandlerImpl();
+    }
+    public void executeCommand(String c,PrintWriter controlOutWriter,int dataPort) {
+        this.controlOutWriter=controlOutWriter;
+        commandHandler.setDataPort(dataPort);
+        String cmds[]=c.split(" ");
+        Command commandType = Command.fromString(cmds[0]);
+        if (commandType == null) {
+            sendMsgToClient(ResponseCode.NOT_IMPLEMENTED.getResponse());
+            return;
+        }
+        printOutput("Command: " + cmds[0]);
+        if(cmds.length>1){
+            printOutput("Args: "+cmds[1]);
+        }
+        switch (commandType) {
+            case STOR:
+                commandHandler.handleStor(cmds[1],controlOutWriter);
+                break;
+            case TYPE:
+                commandHandler.handleType(cmds[1],controlOutWriter);
+                break;
+            case RETR:
+                commandHandler.handleRetr(cmds[1],controlOutWriter);
+                break;
+            case PORT:
+                commandHandler.handlePort(cmds[1],controlOutWriter);
+                break;
+            case PASV:
+                commandHandler.handlePasv(controlOutWriter);
+                break;
+            default:
+                sendMsgToClient("Unknown command");
+                break;
 
-           String cmds[]=command.split(" ");
-           Command commandType = Command.fromString(cmds[0]);
-           if (commandType == null) {
-               dataOutputStream.writeUTF(ResponseCode.NOT_IMPLEMENTED.getResponse());
-               return;
-           }
-           switch (commandType) {
-               case STOR:
-                   commandHandler.upload(controlSocket,cmds[1]);
-                   break;
-               case RETR:
-                   commandHandler.download(controlSocket,cmds[1]);
-                   break;
-//            case USER:
-//                if (commandParts.length > 1) {
-//                    temporaryUsername = commandParts[1];
-//                    out.println(ResponseCode.NEED_PASSWORD);
-//                } else {
-//                    out.println(ResponseCode.NOT_SUPPORTED);
-//                }
-//                break;
-//
-//            case PASS:
-//                if (commandParts.length > 1 && temporaryUsername != null) {
-//                    handleCommand.login(commandParts, temporaryUsername, out);
-//                } else {
-//                    out.println(ResponseCode.NOT_SUPPORTED);
-//                }
-//                break;
+        }
 
-               default:
-                   dataOutputStream.writeUTF(ResponseCode.NOT_IMPLEMENTED.getResponse());
-                   break;
-           }
-       } catch (IOException e) {
-           throw new RuntimeException(e);
-       } catch (Exception e) {
-           throw new RuntimeException(e);
-       }
+    }
+    private void sendMsgToClient(String msg) {
+        controlOutWriter.println(msg);
+    }
+    private void printOutput(String msg) {
+        System.out.println(msg);
     }
 }
