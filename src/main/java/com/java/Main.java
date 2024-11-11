@@ -1,6 +1,6 @@
 package com.java;
 
-import com.java.FTPServer1.system.Server;
+import com.java.FTPServer.system.Server;
 import com.java.configuration.AppConfig;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
