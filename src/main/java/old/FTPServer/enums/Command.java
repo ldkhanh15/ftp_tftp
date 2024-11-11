@@ -1,4 +1,4 @@
-package com.java.FTPServer.enums;
+package old.FTPServer.enums;
 
 public enum Command {
     USER,   // Đăng nhập với tên người dùng
@@ -21,8 +21,8 @@ public enum Command {
     ABOR,   // Hủy lệnh hiện tại
     PWD,    // Hiển thị thư mục hiện tại
     CWD,    // Thay đổi thư mục làm việc hiện tại
-    CDUP,  // Thay đổi lên thư mục cha
-    LOGIN;
+    CDUP,// Thay đổi lên thư mục cha
+    EPRT;
 
     public static Command fromString(String command) {
         try {

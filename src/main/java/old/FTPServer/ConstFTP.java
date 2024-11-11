@@ -1,4 +1,4 @@
-package com.java.FTPServer;
+package old.FTPServer;
 
 public interface ConstFTP {
    String ROOT_DIR = "ftp_root";

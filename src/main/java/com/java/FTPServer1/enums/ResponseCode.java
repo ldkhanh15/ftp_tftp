@@ -1,4 +1,4 @@
-package com.java.FTPServer.enums;
+package com.java.FTPServer1.enums;
 
 public enum ResponseCode {
     COMMAND_OK(200, "Command okay."),
@@ -11,22 +11,24 @@ public enum ResponseCode {
     NEED_PASSWORD(331, "User name okay, need password."),
     NOT_LOGGED_IN(530, "Not logged in."),
     SYNTAX_ERROR(500, "Syntax error, command unrecognized."),
-    NOT_SUPPORTED(501, "Syntax error in parameters or arguments."), // Mã 501
+    NOT_SUPPORTED(501, "Syntax error in parameters or arguments."),
     NOT_IMPLEMENTED(502, "Command not implemented."),
     BAD_SEQUENCE(503, "Bad sequence of commands."),
     SERVICE_NOT_AVAILABLE(421, "Service not available, closing control connection."),
     DISCONNECTED(421, "Service not available, closing control connection."),
-    FILE_UNAVAILABLE(550, "Requested action not taken. File unavailable."),
+    FILE_CONFLICT(550, "Requested action not taken."),
     FILE_ALREADY_EXISTS(553, "Requested action not taken. File already exists."),
     PATHNAME_CREATED(257, "Pathname created."),
-    USER_NOT_FOUND(430, "Invalid username or password."), // Mã 430
-    CANNOT_CHANGE_DIRECTORY(550, "Failed to change directory."), // Mã 550
-    CANNOT_OPEN_DATA_CONNECTION(425, "Can't open data connection."), // Mã 425
-    ACTION_NOT_TAKEN(450, "Requested action not taken. File unavailable, not found, or no access."), // Mã 450
+    USER_NOT_FOUND(430, "Invalid username or password."),
+    CANNOT_CHANGE_DIRECTORY(550, "Failed to change directory."),
+    CANNOT_OPEN_DATA_CONNECTION(425, "Can't open data connection."),
+    ACTION_NOT_TAKEN(450, "Requested action not taken. File unavailable, not found, or no access."),
     ALREADY_EXISTS(553, "Requested action not taken. File already exists."),
     FILE_COMPLETED_TRANSFER(226,"File transfer completed"),
-    FILE_STARTING_TRANSFER(150,"Recieved file transfer");
-
+    FILE_STARTING_TRANSFER(150,"Recieved file transfer"),
+    REQUEST_TIMEOUT(522, "Request timed out."),
+    USER_EXIT_ACKNOWLEDGED(229, "User exit acknowledged"),
+            ;
     private final int code;
     private final String message;
 
@@ -35,10 +37,14 @@ public enum ResponseCode {
         this.message = message;
     }
 
-
     public String getResponse(){
-        return code+" "+message;
+        return code + " " + message;
     }
+
+    public String getResponse(String message) {
+        return code + " " + message;
+    }
+
     public int getCode() {
         return code;
     }

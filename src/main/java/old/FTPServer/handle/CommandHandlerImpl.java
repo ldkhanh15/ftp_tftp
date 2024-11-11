@@ -1,13 +1,16 @@
-package com.java.FTPServer.handle;
+package old.FTPServer.handle;
 
-import com.java.FTPServer.enums.TransferType;
 import lombok.Setter;
+import old.FTPServer.enums.TransferType;
+import org.springframework.stereotype.Component;
 
 import java.io.*;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.UnknownHostException;
 
-
+@Component
 public class CommandHandlerImpl {
     private ServerSocket dataSocket;
     private Socket dataConnection;
@@ -42,19 +45,78 @@ public class CommandHandlerImpl {
             e.printStackTrace();
         }
     }
+//    public void handlePort(String args, PrintWriter controlOutWriter) {
+//        this.controlOutWriter=controlOutWriter;
+//        String[] stringSplit = args.split(",");
+//        String hostName = stringSplit[0] + "." + stringSplit[1] + "." + stringSplit[2] + "." + stringSplit[3];
+//        int p = Integer.parseInt(stringSplit[4]) * 256 + Integer.parseInt(stringSplit[5]);
+//        openDataConnectionActive(hostName, p);
+//        sendMsgToClient("Command OK");
+//    }
     public void handlePort(String args, PrintWriter controlOutWriter) {
-        this.controlOutWriter=controlOutWriter;
+    this.controlOutWriter = controlOutWriter;
+
+    if (args.startsWith("|")) {
+        // Xử lý định dạng EPRT: |<protocol>|<host>|<port>|
+        String[] parts = args.split("\\|");
+        if (parts.length != 4) {
+            sendMsgToClient("501 Syntax error in parameters or arguments.");
+            return;
+        }
+
+        String protocol = parts[1];  // "1" là IPv4, "2" là IPv6
+        String hostName = parts[2];
+        int port;
+
+        try {
+            port = Integer.parseInt(parts[3]);
+        } catch (NumberFormatException e) {
+            sendMsgToClient("501 Syntax error in port number.");
+            return;
+        }
+
+        try {
+            // Kiểm tra địa chỉ là IPv4 hoặc IPv6
+            InetAddress address = InetAddress.getByName(hostName);
+            if ((protocol.equals("1") && address instanceof java.net.Inet4Address) ||
+                    (protocol.equals("2") && address instanceof java.net.Inet6Address)) {
+                openDataConnectionActive(hostName, port);
+                sendMsgToClient("200 Command OK");
+            } else {
+                sendMsgToClient("522 Network protocol not supported.");
+            }
+        } catch (UnknownHostException e) {
+            sendMsgToClient("501 Syntax error in host address.");
+        }
+    } else {
+        // Xử lý định dạng PORT: h1,h2,h3,h4,p1,p2 cho IPv4
         String[] stringSplit = args.split(",");
+        if (stringSplit.length != 6) {
+            sendMsgToClient("501 Syntax error in parameters or arguments.");
+            return;
+        }
+
         String hostName = stringSplit[0] + "." + stringSplit[1] + "." + stringSplit[2] + "." + stringSplit[3];
-        int p = Integer.parseInt(stringSplit[4]) * 256 + Integer.parseInt(stringSplit[5]);
-        openDataConnectionActive(hostName, p);
-        sendMsgToClient("Command OK");
+        int port = Integer.parseInt(stringSplit[4]) * 256 + Integer.parseInt(stringSplit[5]);
+
+        try {
+            InetAddress address = InetAddress.getByName(hostName);
+            if (address instanceof java.net.Inet4Address) {
+                openDataConnectionActive(hostName, port);
+                sendMsgToClient("200 Command OK");
+            } else {
+                sendMsgToClient("522 Network protocol not supported for PORT command.");
+            }
+        } catch (UnknownHostException e) {
+            sendMsgToClient("501 Syntax error in host address.");
+        }
     }
+}
     public void openDataConnectionActive(String ipAddress, int port) {
         try {
             dataConnection = new Socket(ipAddress, port);
             dataOutWriter = new PrintWriter(dataConnection.getOutputStream(), true);
-            printOutput("Data connection - Active Mode - established");
+            printOutput("150 Data connection - Active Mode - established");
         } catch (IOException e) {
             printOutput("Could not connect to client data socket");
             e.printStackTrace();
@@ -84,12 +146,13 @@ public class CommandHandlerImpl {
         this.controlOutWriter=controlOutWriter;
         if (mode.toUpperCase().equals("A")) {
             transferMode = TransferType.ASCII;
-            sendMsgToClient("OK change to ASCII");
+            sendMsgToClient("200 OK change to ASCII");
         } else if (mode.toUpperCase().equals("I")) {
             transferMode = TransferType.BINARY;
-            sendMsgToClient("OK change to binary");
+            sendMsgToClient("200 OK change to binary");
         } else
             sendMsgToClient("Not OK");
+
     }
     public void handleRetr(String file, PrintWriter controlOutWriter) {
         this.controlOutWriter=controlOutWriter;
@@ -100,7 +163,7 @@ public class CommandHandlerImpl {
             if (transferMode == TransferType.BINARY) {
                 BufferedOutputStream fout = null;
                 BufferedInputStream fin = null;
-                sendMsgToClient("Opening binary mode data connection for requested file " + f.getName());
+                sendMsgToClient("150 Opening binary mode data connection for requested file " + f.getName());
                 try {
                     fout = new BufferedOutputStream(dataConnection.getOutputStream());
                     fin = new BufferedInputStream(new FileInputStream(f));
@@ -129,7 +192,7 @@ public class CommandHandlerImpl {
                 sendMsgToClient("File transfer successful. Closing data connection.");
             }
             else {
-                sendMsgToClient("Opening ASCII mode data connection for requested file " + f.getName());
+                sendMsgToClient("150 opening ASCII mode data connection for requested file " + f.getName());
                 BufferedReader rin = null;
                 PrintWriter rout = null;
                 try {
@@ -160,7 +223,6 @@ public class CommandHandlerImpl {
         closeDataConnection();
 
     }
-
     public void handleStor(String file, PrintWriter controlOutWriter) {
         this.controlOutWriter=controlOutWriter;
         if (file == null) {
@@ -170,11 +232,12 @@ public class CommandHandlerImpl {
             System.out.println(currDirectory + "/" + file);
             if (f.exists()) {
                 sendMsgToClient("File already exists");
-            } else {
+            }
+            else {
                 if (transferMode == TransferType.BINARY) {
                     BufferedOutputStream fout = null;
                     BufferedInputStream fin = null;
-                    sendMsgToClient("Opening binary mode data connection for requested file " + f.getName());
+                    sendMsgToClient("150 Opening binary mode data connection for requested file " + f.getName());
                     try {
                         fout = new BufferedOutputStream(new FileOutputStream(f));
                         fin = new BufferedInputStream(dataConnection.getInputStream());
@@ -206,8 +269,9 @@ public class CommandHandlerImpl {
                     sendMsgToClient("File transfer successful. Closing data connection.");
 
                 }
+
                 else {
-                    sendMsgToClient("Opening ASCII mode data connection for requested file " + f.getName());
+                    sendMsgToClient("150 Opening ASCII mode data connection for requested file " + f.getName());
                     BufferedReader rin = null;
                     PrintWriter rout = null;
                     try {

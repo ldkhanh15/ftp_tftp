@@ -1,21 +1,27 @@
-package com.java.FTPServer;
+package old.FTPServer;
 
-import com.java.FTPServer.enums.TransferType;
+import lombok.Setter;
+import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
+import old.FTPServer.enums.TransferType;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
+@ToString
+@Slf4j
 public class Client extends Thread {
+    @Setter
     private String currDirectory;
-    //control connection
-    private Socket controlSocket;
+    private final Socket controlSocket;
     private PrintWriter controlOutWriter;
     private BufferedReader controlIn;
-    private int dataPort;
-    private TransferType transferMode = TransferType.ASCII;
-    private Router router;
+    private final int dataPort;
+    private final TransferType transferMode = TransferType.ASCII;
+    private final Router router;
 
     public Client(Socket client, int dataPort) {
         super();
@@ -24,6 +30,7 @@ public class Client extends Thread {
         this.currDirectory = System.getProperty("user.dir") + "/ftp_root";
         router=new Router();
     }
+
     public void run() {
         printOutput("Current working directory " + this.currDirectory);
         try {
@@ -34,7 +41,7 @@ public class Client extends Thread {
                 router.executeCommand(controlIn.readLine(),controlOutWriter,dataPort);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(e.getMessage());
         } finally {
             try {
                 controlIn.close();
@@ -42,13 +49,12 @@ public class Client extends Thread {
                 controlSocket.close();
                 printOutput("Sockets closed and worker stopped");
             } catch (IOException e) {
-                e.printStackTrace();
                 printOutput("Could not close sockets");
             }
         }
     }
     private void printOutput(String msg) {
-        System.out.println(msg);
+        log.info(msg);
     }
     public void sendMsgToClient(String msg) {
         controlOutWriter.println(msg);
