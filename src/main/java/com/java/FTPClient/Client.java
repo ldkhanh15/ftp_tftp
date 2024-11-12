@@ -126,12 +126,12 @@ public class Client {
         } else {
             passive();
         }
-        sendCommand("STOR " + "actor_movies.txt");
+        sendCommand("STOR " + "21d936f5-5150-4ff2-8cc3-00b9044f4439.jpg");
         String response = readServerResponse();
         System.out.println("Server: " + response);
         if (!response.equalsIgnoreCase("File already exists")) {
 
-            try (FileInputStream fileIn = new FileInputStream("C:\\Users\\MY DREAMS\\Downloads\\actor_movies.txt");
+            try (FileInputStream fileIn = new FileInputStream("D:\\Dowloads\\21d936f5-5150-4ff2-8cc3-00b9044f4439.jpg");
                  OutputStream dataOut = dataConnection.getOutputStream()) {
 
                 byte[] buffer = new byte[1024];

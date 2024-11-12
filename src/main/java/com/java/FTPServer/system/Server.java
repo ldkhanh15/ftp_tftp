@@ -1,59 +1,55 @@
-package com.java.FTPServer;
+package com.java.FTPServer.system;
 
-import com.java.GUI.view.DirectionTreeView;
-import com.java.GUI.view.LoginView;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
-import java.io.*;
+import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+
+@Slf4j
 @Component
+@RequiredArgsConstructor
 public class Server {
     private static final int PORT = ConstFTP.PORT;
-    private final Router router;
-
-    public Server(){
-        router=new Router();
-    }
+    private final ApplicationContext applicationContext;
+    private final List<Client> clients = new ArrayList<>();
     private ServerSocket serverSocket;
     boolean serverRunning = true;
-    private List<Client> clients;
 
     public void start() {
-        clients = new ArrayList<>();
         try {
             serverSocket = new ServerSocket(PORT);
         } catch (IOException e) {
-            System.out.println("Could not create server socket");
+            log.error("Could not create server socket {}", e.getMessage());
             System.exit(-1);
         }
 
-        System.out.println("FTP Server started listening on port " + PORT);
+        log.info("FTP Server started listening on port " + PORT);
         while (serverRunning) {
-
             try {
                 Socket socketClient = serverSocket.accept();
-                // 1 client 1 port data, mo tu 1023
                 int dataPort = PORT + clients.size() + 1022;
-                Client client = new Client(socketClient, dataPort);
+                Client client = applicationContext.getBean(Client.class);
+                client.init(socketClient, dataPort);
                 clients.add(client);
-                System.out.println("New connection received. Worker was created.");
+                log.info("New connection received. Worker was created: {}", client.toString());
                 client.start();
             } catch (IOException e) {
-                System.out.println("Exception encountered on accept");
-                e.printStackTrace();
+                log.error("Exception encountered on accept: {}", e.getMessage());
+                log.error(e.getMessage());
             }
-
         }
         try {
             serverSocket.close();
-            System.out.println("Server was stopped");
+            log.info("Server was stopped");
 
         } catch (IOException e) {
-            System.out.println("Problem stopping server");
+            log.error("Problem stopping server : {}", e.getMessage());
             System.exit(-1);
         }
     }

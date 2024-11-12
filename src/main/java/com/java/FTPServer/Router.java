@@ -2,61 +2,124 @@ package com.java.FTPServer;
 
 import com.java.FTPServer.enums.Command;
 import com.java.FTPServer.enums.ResponseCode;
-import com.java.FTPServer.handle.CommandHandler;
-import com.java.FTPServer.handle.CommandHandlerImpl;
-import com.java.controller.UserController;
+import com.java.FTPServer.handle.*;
+import com.java.FTPServer.system.UserSession;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.io.*;
-import java.net.Socket;
+import java.io.PrintWriter;
 
+@Component
+@RequiredArgsConstructor
+@Slf4j
 public class Router {
-    private final CommandHandlerImpl commandHandler;
     private PrintWriter controlOutWriter;
-    public Router(){
-        this.commandHandler=new CommandHandlerImpl();
-    }
-    public void executeCommand(String c,PrintWriter controlOutWriter,int dataPort) {
-        this.controlOutWriter=controlOutWriter;
-        commandHandler.setDataPort(dataPort);
-        String cmds[]=c.split(" ");
-        Command commandType = Command.fromString(cmds[0]);
+
+    private final AuthHandle authHandle;
+    private final ConnectionHandle connectionHandle;
+    private final FileHandle fileHandle;
+    private final DirectoryHandle directoryHandle;
+    private final CommonHandle commonHandle;
+
+    public void executeCommand(String command, PrintWriter controlOutWriter, UserSession userSession) {
+
+        this.controlOutWriter = controlOutWriter;
+
+        String[] commands;
+        commands = command.split(" ");
+        Command commandType = Command.fromString(commands[0]);
         if (commandType == null) {
             sendMsgToClient(ResponseCode.NOT_IMPLEMENTED.getResponse());
             return;
         }
-        printOutput("Command: " + cmds[0]);
-        if(cmds.length>1){
-            printOutput("Args: "+cmds[1]);
+
+        log.info("Command: {}", commands[0]);
+        if(commands.length > 1){
+            log.info("Args: {}", commands[1]);
         }
+        log.info("=======end=======");
+
+        System.out.println("Command: " + commands[0]);
+        if (commands.length > 1) {
+            System.out.println("Args: " + commands[1]);
+        }
+        System.out.println("=======end=======");
+
+
         switch (commandType) {
-            case STOR:
-                commandHandler.handleStor(cmds[1],controlOutWriter);
+            // Auth
+            case USER:
+                authHandle.handleUser(commands[1], controlOutWriter, userSession);
                 break;
-            case TYPE:
-                commandHandler.handleType(cmds[1],controlOutWriter);
+            case PASS:
+                authHandle.handlePass(commands[1], controlOutWriter, userSession);
                 break;
-            case RETR:
-                commandHandler.handleRetr(cmds[1],controlOutWriter);
+            case QUIT:
+                authHandle.handleQuit(controlOutWriter);
+
+            // Connection
+            case PORT, EPRT:
+                connectionHandle.processActiveMode(commands[1], controlOutWriter);
                 break;
-            case PORT:
-                commandHandler.handlePort(cmds[1],controlOutWriter);
+            case EPSV:
+                connectionHandle.processPassiveMode(controlOutWriter, userSession.getDataPort(), true);
                 break;
             case PASV:
-                commandHandler.handlePasv(controlOutWriter);
+                connectionHandle.processPassiveMode(controlOutWriter, userSession.getDataPort(), false);
+            case TYPE:
+                connectionHandle.processTypeTransfer(commands[1], controlOutWriter, userSession);
                 break;
+
+            // File
+            case STOR:
+                fileHandle.uploadFile(commands[1], controlOutWriter, userSession);
+                break;
+            case RETR:
+                fileHandle.downloadFile(commands[1], controlOutWriter, userSession);
+                break;
+            case APPE:
+                fileHandle.appendToFile(commands[1], controlOutWriter, userSession);
+                break;
+            case DELE:
+                fileHandle.deleteFile(commands[1], controlOutWriter, userSession);
+                break;
+
+            // Directory
+            case CWD:
+                directoryHandle.changeWorkingDirectory(commands[1], controlOutWriter, userSession);
+                break;
+            case XPWD:
+                directoryHandle.printWorkingDirectory(controlOutWriter, userSession.getCurrDirectory());
+                break;
+            case XMKD:
+                directoryHandle.createDirectory(commands[1], controlOutWriter, userSession.getCurrDirectory());
+                break;
+            case XRMD:
+                directoryHandle.removeDirectory(commands[1], controlOutWriter, userSession.getCurrDirectory());
+                break;
+
+            // Common
+            case LIST:
+                commonHandle.listDetail(controlOutWriter, userSession.getCurrDirectory());
+                break;
+            case NLST:
+                commonHandle.listName(controlOutWriter, userSession.getCurrDirectory());
+                break;
+            case RNFR:
+                commonHandle.initiateRename(commands[1], controlOutWriter);
+                break;
+            case RNTO:
+                commonHandle.finalizeRename(commands[1], controlOutWriter);
+                break;
+
             default:
-                sendMsgToClient("Unknown command");
+                sendMsgToClient(ResponseCode.NOT_IMPLEMENTED.getResponse());
                 break;
-
         }
-
     }
+
     private void sendMsgToClient(String msg) {
         controlOutWriter.println(msg);
-    }
-    private void printOutput(String msg) {
-        System.out.println(msg);
     }
 }
