@@ -40,13 +40,18 @@ public class ConnectionHandleImpl implements ConnectionHandle {
     }
 
     @Override
-    public void processPassiveMode(PrintWriter out, int dataPort) {
-        String[] myIpSplit = IP_SERVER.split("\\.");
-        int p1 = dataPort / 256;
-        int p2 = dataPort % 256;
-        out.println(ResponseCode.USER_EXIT_ACKNOWLEDGED.getResponse("Entering Passive Mode (" + myIpSplit[0] + "," + myIpSplit[1] + "," + myIpSplit[2] + ","
-                + myIpSplit[3] + "," + p1 + "," + p2 + ")"));
-        openDataConnectionPassive(dataPort);
+    public void processPassiveMode(PrintWriter out, int dataPort, boolean isExtended) {
+        String[] myIpSplit = "192.168.1.11".split("\\.");
+//      String[] myIpSplit = IP_SERVER.split("\\.");
+        dataPort = 1099;
+        if (isExtended) {
+            out.println(ResponseCode.USER_EXIT_ACKNOWLEDGED.getResponse("Entering Extended Passive Mode (|||" + dataPort + "|)"));
+        } else {
+            int p1 = dataPort / 256;
+            int p2 = dataPort % 256;
+            out.println(ResponseCode.USER_EXIT_ACKNOWLEDGED.getResponse("Entering Passive Mode (" + myIpSplit[0] + "," + myIpSplit[1] + ","
+                    + myIpSplit[2] + "," + myIpSplit[3] + "," + p1 + "," + p2 + ")"));
+        }
     }
 
     @Override
@@ -143,6 +148,7 @@ public class ConnectionHandleImpl implements ConnectionHandle {
             dataConnection = dataSocket.accept();
             log.info("Data connection - Passive Mode - established");
         } catch (IOException e) {
+            System.err.println(e.getMessage());
             log.error("Could not create data connection {}", e.getMessage());
         }
     }

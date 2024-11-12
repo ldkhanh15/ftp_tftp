@@ -63,8 +63,10 @@ public class Router {
                 connectionHandle.processActiveMode(commands[1], controlOutWriter);
                 break;
             case EPSV:
-                connectionHandle.processPassiveMode(controlOutWriter, userSession.getDataPort());
+                connectionHandle.processPassiveMode(controlOutWriter, userSession.getDataPort(), true);
                 break;
+            case PASV:
+                connectionHandle.processPassiveMode(controlOutWriter, userSession.getDataPort(), false);
             case TYPE:
                 connectionHandle.processTypeTransfer(commands[1], controlOutWriter, userSession);
                 break;
@@ -85,21 +87,21 @@ public class Router {
 
             // Directory
             case CWD:
-                directoryHandle.changeWorkingDirectory(commands[1], controlOutWriter);
+                directoryHandle.changeWorkingDirectory(commands[1], controlOutWriter, userSession);
                 break;
             case XPWD:
                 directoryHandle.printWorkingDirectory(controlOutWriter, userSession.getCurrDirectory());
                 break;
             case XMKD:
-                directoryHandle.createDirectory(commands[1], controlOutWriter);
+                directoryHandle.createDirectory(commands[1], controlOutWriter, userSession.getCurrDirectory());
                 break;
             case XRMD:
-                directoryHandle.removeDirectory(commands[1], controlOutWriter);
+                directoryHandle.removeDirectory(commands[1], controlOutWriter, userSession.getCurrDirectory());
                 break;
 
             // Common
             case LIST:
-                commonHandle.listDetail(controlOutWriter);
+                commonHandle.listDetail(controlOutWriter, userSession.getCurrDirectory());
                 break;
             case NLST:
                 commonHandle.listName(controlOutWriter, userSession.getCurrDirectory());

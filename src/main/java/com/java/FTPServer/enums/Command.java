@@ -6,6 +6,7 @@ public enum Command {
     QUIT,
     PORT,
     EPRT,
+    PASV,
     EPSV,
     TYPE,
     STOR,
