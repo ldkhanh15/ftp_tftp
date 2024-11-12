@@ -25,10 +25,10 @@ public class AuthHandleImpl implements AuthHandle {
     @Override
     public void handlePass(String password, PrintWriter out, UserSession userSession) {
         if(userController.login(userSession.getUsername(), password, Role.USER)) {
-            out.println(ResponseCode.NOT_LOGGED_IN.getResponse("Login Failed"));
+            out.println(ResponseCode.USER_LOGGED_IN.getResponse("Login Successful"));
         }
         else {
-            out.println(ResponseCode.USER_LOGGED_IN.getResponse("Login Successful"));
+            out.println(ResponseCode.NOT_LOGGED_IN.getResponse("Login Failed"));
         }
     }
 

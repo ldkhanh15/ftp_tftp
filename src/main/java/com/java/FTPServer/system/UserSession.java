@@ -10,7 +10,7 @@ import lombok.Setter;
 public class UserSession {
     private String username;
     private UserStatus status = UserStatus.NOT_LOGGED_IN;
-    private String currDirectory = System.getProperty("user.dir") + "/ftp_root";
+    private String currDirectory = ConstFTP.ROOT_DIR_FOR_USER;
     private TransferType transferMode = TransferType.ASCII;
     private int dataPort;
 }

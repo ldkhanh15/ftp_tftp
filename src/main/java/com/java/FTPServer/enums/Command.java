@@ -13,7 +13,7 @@ public enum Command {
     APPE,
     DELE,
     LIST,
-    NLIST,
+    NLST,
     RNFR,
     RNTO,
     CWD,

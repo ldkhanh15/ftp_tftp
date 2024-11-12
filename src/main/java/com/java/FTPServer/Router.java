@@ -80,7 +80,7 @@ public class Router {
                 fileHandle.appendToFile(commands[1], controlOutWriter, userSession);
                 break;
             case DELE:
-                fileHandle.deleteFile(commands[1], controlOutWriter);
+                fileHandle.deleteFile(commands[1], controlOutWriter, userSession);
                 break;
 
             // Directory
@@ -88,7 +88,7 @@ public class Router {
                 directoryHandle.changeWorkingDirectory(commands[1], controlOutWriter);
                 break;
             case XPWD:
-                directoryHandle.printWorkingDirectory(controlOutWriter);
+                directoryHandle.printWorkingDirectory(controlOutWriter, userSession.getCurrDirectory());
                 break;
             case XMKD:
                 directoryHandle.createDirectory(commands[1], controlOutWriter);
@@ -101,8 +101,8 @@ public class Router {
             case LIST:
                 commonHandle.listDetail(controlOutWriter);
                 break;
-            case NLIST:
-                commonHandle.listName(controlOutWriter);
+            case NLST:
+                commonHandle.listName(controlOutWriter, userSession.getCurrDirectory());
                 break;
             case RNFR:
                 commonHandle.initiateRename(commands[1], controlOutWriter);

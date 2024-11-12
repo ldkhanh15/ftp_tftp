@@ -66,11 +66,18 @@ public class FileHandleImpl implements FileHandle {
     public void appendToFile(String fileName, PrintWriter out, UserSession userSession) {
         File f = null;
         if (fileName == null) {
-            // lay file ra de ghi de
+            out.println(ResponseCode.NOT_SUPPORTED.getResponse("No filename given"));
         } else {
             f = new File(userSession.getCurrDirectory() + "/" + fileName);
             if (f.exists()) {
-                out.println(ResponseCode.FILE_CONFLICT.getResponse("File already exists"));
+                // lay file ra file de append
+                if (userSession.getTransferMode() == TransferType.BINARY) {
+                    appendToFileForBinaryMode(f, out);
+                } else if (userSession.getTransferMode() == TransferType.ASCII) {
+                    appendToFileForASCIIMode(f, out);
+                } else {
+                    out.println(ResponseCode.NOT_SUPPORTED.getResponse("Unsupported transfer mode"));
+                }
             } else {
                 if (userSession.getTransferMode() == TransferType.BINARY) {
                     storeFileForBinaryMode(f, out);
@@ -87,7 +94,27 @@ public class FileHandleImpl implements FileHandle {
     }
 
     @Override
-    public void deleteFile(String fileName, PrintWriter out) {
+    public void deleteFile(String fileName, PrintWriter out, UserSession userSession) {
+        if (fileName == null || fileName.trim().isEmpty()){
+            out.println(ResponseCode.NOT_SUPPORTED.getResponse("No filename given"));
+            return;
+        }
+        File file = new File(userSession.getCurrDirectory() + "/" + fileName);
+        if (!file.exists()) {
+            out.println(ResponseCode.FILE_CONFLICT.getResponse("Delete operation failed"));
+            return;
+        }
+        if (!file.isFile()) {
+            out.println(ResponseCode.FILE_CONFLICT.getResponse("Delete operation failed"));
+            return;
+        }
+        if (file.delete()) {
+            out.println(ResponseCode.FILE_COMPLETED_TRANSFER.getResponse("File deleted successfully"));
+            log.info("File {} deleted successfully", file.getName());
+        } else {
+            out.println(ResponseCode.FILE_CONFLICT.getResponse("Delete operation failed"));
+            log.error("Failed to delete file {}", file.getName());
+        }
 
     }
 
@@ -227,6 +254,37 @@ public class FileHandleImpl implements FileHandle {
             rin.close();
         } catch (IOException e) {
             log.error("Could not close byte streams {}", e.getMessage());
+        }
+    }
+
+    private void appendToFileForBinaryMode(File file, PrintWriter out) {
+        out.println(ResponseCode.FILE_STARTING_TRANSFER.getResponse("Opening binary mode data connection for appending to file"));
+        try (BufferedOutputStream fout = new BufferedOutputStream(new FileOutputStream(file, true));
+             BufferedInputStream fin = new BufferedInputStream(connectionHandle.getDataConnection().getInputStream())) {
+
+            byte[] buf = new byte[1024];
+            int l;
+            while ((l = fin.read(buf)) != -1) {
+                fout.write(buf, 0, l);
+            }
+        } catch (IOException e) {
+            log.error("Error during binary append to file {}", e.getMessage());
+            out.println(ResponseCode.FILE_CONFLICT.getResponse("Error during ASCII append to file"));
+        }
+    }
+
+    private void appendToFileForASCIIMode(File file, PrintWriter out) {
+        out.println(ResponseCode.FILE_STARTING_TRANSFER.getResponse("Opening ASCII mode data connection for appending to file"));
+        try (BufferedReader rin = new BufferedReader(new InputStreamReader(connectionHandle.getDataConnection().getInputStream()));
+             PrintWriter rout = new PrintWriter(new FileOutputStream(file, true))) {
+
+            String line;
+            while ((line = rin.readLine()) != null) {
+                rout.println(line);
+            }
+        } catch (IOException e) {
+            log.error("Error during ASCII append to file {}", e.getMessage());
+            out.println(ResponseCode.FILE_CONFLICT.getResponse("Error during ASCII append to file"));
         }
     }
 }

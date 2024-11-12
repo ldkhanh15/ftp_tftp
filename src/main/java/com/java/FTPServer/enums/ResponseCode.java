@@ -18,7 +18,7 @@ public enum ResponseCode {
     DISCONNECTED(421, "Service not available, closing control connection."),
     FILE_CONFLICT(550, "Requested action not taken."),
     FILE_ALREADY_EXISTS(553, "Requested action not taken. File already exists."),
-    PATHNAME_CREATED(257, "Pathname created."),
+    OPERATION_OK(257, "Pathname created."),
     USER_NOT_FOUND(430, "Invalid username or password."),
     CANNOT_CHANGE_DIRECTORY(550, "Failed to change directory."),
     CANNOT_OPEN_DATA_CONNECTION(425, "Can't open data connection."),
