@@ -4,6 +4,7 @@ import com.java.FTPServer.enums.ResponseCode;
 import com.java.FTPServer.enums.UserStatus;
 import com.java.FTPServer.handle.AuthHandle;
 import com.java.FTPServer.system.UserSession;
+import com.java.FTPServer.system.UserSessionContext;
 import com.java.controller.UserController;
 import com.java.enums.Role;
 import lombok.RequiredArgsConstructor;
@@ -20,11 +21,12 @@ public class AuthHandleImpl implements AuthHandle {
         userSession.setUsername(username);
         userSession.setStatus(UserStatus.USER_ENTERED);
         out.println(ResponseCode.NEED_PASSWORD.getResponse("Please specify the password"));
+        System.out.println(UserSessionContext.getUserSession().getUsername());
     }
 
     @Override
     public void handlePass(String password, PrintWriter out, UserSession userSession) {
-        if(userController.login(userSession.getUsername(), password, Role.USER)) {
+        if(userController.login(userSession.getUsername(), password)) {
             out.println(ResponseCode.USER_LOGGED_IN.getResponse("Login Successful"));
         }
         else {
@@ -37,6 +39,7 @@ public class AuthHandleImpl implements AuthHandle {
         out.println(ResponseCode.SERVICE_CLOSING.getResponse());
         try {
             out.close();
+            UserSessionContext.clear();
         }
         catch (Exception e) {
             System.err.println(e.getMessage());

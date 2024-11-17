@@ -39,7 +39,7 @@ public class LoginHandle{
     }
 
     private boolean authenticate(String username, String password) {
-        return userController.login(username, password, Role.ADMIN);
+        return userController.login(username, password);
     }
 
     private void forward() {

@@ -5,8 +5,8 @@ import com.java.FTPServer.system.UserSession;
 import java.io.PrintWriter;
 
 public interface DirectoryHandle {
-    void createDirectory(String directoryName, PrintWriter out, String currDirectory);
-    void removeDirectory(String directoryName, PrintWriter out, String currDirectory);
-    void changeWorkingDirectory(String directoryName, PrintWriter out, UserSession userSession);
+    void createDirectory(PrintWriter out, String directoryName ,String currDirectory);
+    void removeDirectory( PrintWriter out,String directoryName, String currDirectory);
+    void changeWorkingDirectory( PrintWriter out,String directoryName, UserSession userSession);
     void printWorkingDirectory(PrintWriter out, String currentDirectory);
 }

@@ -5,6 +5,6 @@ import java.io.PrintWriter;
 public interface CommonHandle {
     void listName(PrintWriter out, String currentDirectory);
     void listDetail(PrintWriter out, String currentDirectory);
-    void initiateRename(String nameOnServer, PrintWriter out);
-    void finalizeRename(String newName,PrintWriter out);
+    void initiateRename(PrintWriter out,String nameOnServer);
+    void finalizeRename(PrintWriter out,String newName);
 }

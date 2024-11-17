@@ -10,7 +10,6 @@ import java.io.Serializable;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString
 public class File extends Item implements Serializable {
 
     @Column(name = "file_name", nullable = false, length = 255)
@@ -24,13 +23,6 @@ public class File extends Item implements Serializable {
 
     @Column(name = "file_type", length = 255)
     private String fileType;
-
-    @Column(name = "download_count", nullable = false)
-    private Long downloadCount;
-
-    @Column(name = "view_count", nullable = false)
-    private Long viewCount;
-
     @ManyToOne
     @JoinColumn(name = "parent_id")
     private Folder parentFolder;

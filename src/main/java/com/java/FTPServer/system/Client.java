@@ -24,35 +24,38 @@ public class Client extends Thread {
 
     public void init(Socket clientSocket, int dataPort) {
         this.controlSocket = clientSocket;
-        userSession = new UserSession();
+        UserSession userSession = new UserSession();
         userSession.setDataPort(dataPort);
+        this.userSession=userSession;
     }
 
     public void run() {
-
-        PrintWriter controlOutWriter = null;
-        BufferedReader controlIn = null;
-        try {
-            controlIn = new BufferedReader(new InputStreamReader(controlSocket.getInputStream()));
-            controlOutWriter = new PrintWriter(controlSocket.getOutputStream(), true);
-            controlOutWriter.println(ResponseCode.SERVICE_READY.getResponse("Welcome to FTP server"));
-            while (true) {
-                router.executeCommand(controlIn.readLine(),controlOutWriter, userSession);
-            }
-        } catch (Exception e) {
-            log.error(e.getMessage());
-        } finally {
+        UserSessionContext.setUserSession(this.userSession);
+        while (!controlSocket.isClosed()) {
+            PrintWriter controlOutWriter = null;
+            BufferedReader controlIn = null;
             try {
-                if (controlIn != null) {
-                    controlIn.close();
+                controlIn = new BufferedReader(new InputStreamReader(controlSocket.getInputStream()));
+                controlOutWriter = new PrintWriter(controlSocket.getOutputStream(), true);
+                controlOutWriter.println(ResponseCode.SERVICE_READY.getResponse("Welcome to FTP server"));
+                while (true) {
+                    router.executeCommand(controlIn.readLine(),controlOutWriter, UserSessionContext.getUserSession());
                 }
-                if (controlOutWriter != null) {
-                    controlOutWriter.close();
+            } catch (Exception e) {
+                log.error(e.getMessage());
+            } finally {
+                try {
+                    if (controlIn != null) {
+                        controlIn.close();
+                    }
+                    if (controlOutWriter != null) {
+                        controlOutWriter.close();
+                    }
+                    controlSocket.close();
+                    printOutput("Sockets closed and worker stopped");
+                } catch (IOException e) {
+                    printOutput("Could not close sockets");
                 }
-                controlSocket.close();
-                printOutput("Sockets closed and worker stopped");
-            } catch (IOException e) {
-                printOutput("Could not close sockets");
             }
         }
     }

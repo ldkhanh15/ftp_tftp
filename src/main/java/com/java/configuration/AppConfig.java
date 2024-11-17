@@ -17,7 +17,7 @@ import java.util.Properties;
 @ComponentScan(basePackages = "com.java")
 @EnableJpaRepositories(basePackages = "com.java.repository")
 @PropertySource("classpath:application.properties")
-@EnableAspectJAutoProxy
+@EnableAspectJAutoProxy(proxyTargetClass = true)
 public class AppConfig {
 
     @Resource
@@ -43,6 +43,9 @@ public class AppConfig {
         Properties properties = new Properties();
         properties.setProperty("hibernate.hbm2ddl.auto", env.getProperty("spring.jpa.hibernate.ddl-auto"));
         properties.setProperty("hibernate.dialect", env.getProperty("spring.jpa.properties.hibernate.dialect"));
+//        properties.setProperty("hibernate.show_sql", "true");
+//        properties.setProperty("hibernate.format_sql", "true");
+//        properties.setProperty("hibernate.use_sql_comments", "true");
         em.setJpaProperties(properties);
 
         return em;

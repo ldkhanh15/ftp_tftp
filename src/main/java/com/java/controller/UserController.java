@@ -9,9 +9,9 @@ import java.util.List;
 @Component
 public class UserController {
     private final UserService userService;
-    public boolean  login(String username, String password, Role role) {
+    public boolean  login(String username, String password) {
         try {
-            return userService.login(username, password, role);
+            return userService.login(username, password);
         } catch (Exception e){
             System.out.println(e.getMessage());
             return false;

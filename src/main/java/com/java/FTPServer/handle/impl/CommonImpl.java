@@ -1,7 +1,10 @@
 package com.java.FTPServer.handle.impl;
 
+import com.java.FTPServer.anotation.FolderOwnerShip;
+import com.java.FTPServer.anotation.ItemOwnerShip;
 import com.java.FTPServer.enums.ResponseCode;
 import com.java.FTPServer.handle.CommonHandle;
+import com.java.enums.AccessType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -14,6 +17,7 @@ import java.io.*;
 public class CommonImpl implements CommonHandle {
     private final ConnectionHandleImpl connectionHandle;
     @Override
+    @FolderOwnerShip(action = AccessType.READ)
     public void listName(PrintWriter out, String currentDirectory) {
         File directory = new File(currentDirectory);
 
@@ -27,6 +31,7 @@ public class CommonImpl implements CommonHandle {
     }
 
     @Override
+    @FolderOwnerShip(action = AccessType.READ)
     public void listDetail(PrintWriter out, String currentDirectory) {
         File directory = new File(currentDirectory);
 
@@ -40,12 +45,12 @@ public class CommonImpl implements CommonHandle {
     }
 
     @Override
-    public void initiateRename(String nameOnServer, PrintWriter out) {
+    public void initiateRename( PrintWriter out,String nameOnServer) {
 
     }
 
     @Override
-    public void finalizeRename(String newName, PrintWriter out) {
+    public void finalizeRename( PrintWriter out,String newName) {
 
     }
 

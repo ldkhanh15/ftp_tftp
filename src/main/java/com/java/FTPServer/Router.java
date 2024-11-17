@@ -25,7 +25,7 @@ public class Router {
     public void executeCommand(String command, PrintWriter controlOutWriter, UserSession userSession) {
 
         this.controlOutWriter = controlOutWriter;
-
+        System.out.println(userSession.getCurrDirectory());
         String[] commands;
         commands = command.split(" ");
         Command commandType = Command.fromString(commands[0]);
@@ -73,30 +73,30 @@ public class Router {
 
             // File
             case STOR:
-                fileHandle.uploadFile(commands[1], controlOutWriter, userSession);
+                fileHandle.uploadFile( controlOutWriter,commands[1], userSession);
                 break;
             case RETR:
-                fileHandle.downloadFile(commands[1], controlOutWriter, userSession);
+                fileHandle.downloadFile(controlOutWriter,commands[1],  userSession);
                 break;
             case APPE:
-                fileHandle.appendToFile(commands[1], controlOutWriter, userSession);
+                fileHandle.appendToFile( controlOutWriter, commands[1],userSession);
                 break;
             case DELE:
-                fileHandle.deleteFile(commands[1], controlOutWriter, userSession);
+                fileHandle.deleteFile( controlOutWriter, commands[1],userSession);
                 break;
 
             // Directory
             case CWD:
-                directoryHandle.changeWorkingDirectory(commands[1], controlOutWriter, userSession);
+                directoryHandle.changeWorkingDirectory(controlOutWriter,commands[1], userSession);
                 break;
             case XPWD:
                 directoryHandle.printWorkingDirectory(controlOutWriter, userSession.getCurrDirectory());
                 break;
             case XMKD:
-                directoryHandle.createDirectory(commands[1], controlOutWriter, userSession.getCurrDirectory());
+                directoryHandle.createDirectory( controlOutWriter,commands[1], userSession.getCurrDirectory());
                 break;
             case XRMD:
-                directoryHandle.removeDirectory(commands[1], controlOutWriter, userSession.getCurrDirectory());
+                directoryHandle.removeDirectory( controlOutWriter,commands[1], userSession.getCurrDirectory());
                 break;
 
             // Common
@@ -107,10 +107,10 @@ public class Router {
                 commonHandle.listName(controlOutWriter, userSession.getCurrDirectory());
                 break;
             case RNFR:
-                commonHandle.initiateRename(commands[1], controlOutWriter);
+                commonHandle.initiateRename(controlOutWriter,commands[1]);
                 break;
             case RNTO:
-                commonHandle.finalizeRename(commands[1], controlOutWriter);
+                commonHandle.finalizeRename(controlOutWriter,commands[1]);
                 break;
 
             default:

@@ -52,6 +52,7 @@ public class ConnectionHandleImpl implements ConnectionHandle {
             out.println(ResponseCode.USER_EXIT_ACKNOWLEDGED.getResponse("Entering Passive Mode (" + myIpSplit[0] + "," + myIpSplit[1] + ","
                     + myIpSplit[2] + "," + myIpSplit[3] + "," + p1 + "," + p2 + ")"));
         }
+        openDataConnectionPassive(dataPort);
     }
 
     @Override

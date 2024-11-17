@@ -34,9 +34,9 @@ public class User implements Serializable {
     @Column(nullable = false)
     private Role role;
 
-    @OneToMany(mappedBy = "owner", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "owner")
     private Set<Item> items;
 
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "user")
     private Set<AccessItem> accessItems;
 }

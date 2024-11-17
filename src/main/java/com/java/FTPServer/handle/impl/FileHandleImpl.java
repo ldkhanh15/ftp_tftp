@@ -4,20 +4,27 @@ import com.java.FTPServer.enums.ResponseCode;
 import com.java.FTPServer.enums.TransferType;
 import com.java.FTPServer.handle.FileHandle;
 import com.java.FTPServer.system.UserSession;
+import com.java.model.Folder;
+import com.java.service.FileService;
+import com.java.service.FolderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
+import java.util.Optional;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class FileHandleImpl implements FileHandle {
     private final ConnectionHandleImpl connectionHandle;
-
+    private final FolderService folderService;
+    private final FileService fileService;
+    private UserSession userSession;
     @Override
-    public void uploadFile(String fileName, PrintWriter out, UserSession userSession) {
+    public void uploadFile(PrintWriter out,String fileName,  UserSession userSession) {
+        this.userSession=userSession;
         File f = null;
         if (fileName == null) {
             out.println(ResponseCode.NOT_SUPPORTED.getResponse("No filename given"));
@@ -28,8 +35,10 @@ public class FileHandleImpl implements FileHandle {
             } else {
                 if (userSession.getTransferMode() == TransferType.BINARY) {
                     storeFileForBinaryMode(f, out);
+                    saveFile(f);
                 } else if (userSession.getTransferMode() == TransferType.ASCII) {
                     storeFileForASCIIMode(f, out);
+                    saveFile(f);
                 } else {
                     out.println(ResponseCode.NOT_SUPPORTED.getResponse("Unsupported transfer mode"));
                 }
@@ -39,9 +48,32 @@ public class FileHandleImpl implements FileHandle {
         out.println(ResponseCode.FILE_COMPLETED_TRANSFER.getResponse());
         connectionHandle.closeDataConnection();
     }
+    private void saveFile(File f){
+        Optional<Folder> folder=folderService.findFolderIdByPath(userSession.getCurrDirectory());
+        if(folder.isPresent()){
+            com.java.model.File file=new com.java.model.File(f.getName(),f.getPath(),f.length(),
+                    getFileType(f.getName()),folder.get());
+            fileService.save(file);
+        }
+    }
+    private void saveFile(com.java.model.File fileDB,File f){
+        Optional<Folder> folder=folderService.findFolderIdByPath(userSession.getCurrDirectory());
+        if(folder.isPresent() && fileDB !=null){
+            fileDB.setFileSize(f.length());
+            fileService.save(fileDB);
+        }
+    }
+    private String getFileType(String fileName) {
+        int lastIndexOfDot = fileName.lastIndexOf('.');
+        if (lastIndexOfDot > 0 && lastIndexOfDot < fileName.length() - 1) {
+            return fileName.substring(lastIndexOfDot + 1).toLowerCase();
+        }
+        return "unknown";
+    }
 
     @Override
-    public void downloadFile(String fileName, PrintWriter out, UserSession userSession) {
+    public void downloadFile(PrintWriter out,String fileName,  UserSession userSession) {
+        this.userSession=userSession;
         File f = new File(userSession.getCurrDirectory() + "/" + fileName);
         if (!f.exists()) {
             out.println(ResponseCode.FILE_CONFLICT.getResponse("File does not exist"));
@@ -63,26 +95,36 @@ public class FileHandleImpl implements FileHandle {
     }
 
     @Override
-    public void appendToFile(String fileName, PrintWriter out, UserSession userSession) {
+    public void appendToFile( PrintWriter out,String fileName, UserSession userSession) {
+        this.userSession=userSession;
         File f = null;
         if (fileName == null) {
             out.println(ResponseCode.NOT_SUPPORTED.getResponse("No filename given"));
         } else {
             f = new File(userSession.getCurrDirectory() + "/" + fileName);
+            com.java.model.File file=null;
+            Optional<Folder> folder=folderService.findFolderIdByPath(userSession.getCurrDirectory());
+            if(folder.isPresent()){
+                file=fileService.findByFileNameAndFolderParent(fileName,folder.get());
+            }
             if (f.exists()) {
                 // lay file ra file de append
                 if (userSession.getTransferMode() == TransferType.BINARY) {
                     appendToFileForBinaryMode(f, out);
+                    saveFile(file,f);
                 } else if (userSession.getTransferMode() == TransferType.ASCII) {
                     appendToFileForASCIIMode(f, out);
+                    saveFile(file,f);
                 } else {
                     out.println(ResponseCode.NOT_SUPPORTED.getResponse("Unsupported transfer mode"));
                 }
             } else {
                 if (userSession.getTransferMode() == TransferType.BINARY) {
                     storeFileForBinaryMode(f, out);
+                    saveFile(f);
                 } else if (userSession.getTransferMode() == TransferType.ASCII) {
                     storeFileForASCIIMode(f, out);
+                    saveFile(f);
                 } else {
                     out.println(ResponseCode.NOT_SUPPORTED.getResponse("Unsupported transfer mode"));
                 }
@@ -94,7 +136,8 @@ public class FileHandleImpl implements FileHandle {
     }
 
     @Override
-    public void deleteFile(String fileName, PrintWriter out, UserSession userSession) {
+    public void deleteFile(PrintWriter out,String fileName,  UserSession userSession) {
+        this.userSession=userSession;
         if (fileName == null || fileName.trim().isEmpty()){
             out.println(ResponseCode.NOT_SUPPORTED.getResponse("No filename given"));
             return;
@@ -109,6 +152,11 @@ public class FileHandleImpl implements FileHandle {
             return;
         }
         if (file.delete()) {
+            Optional<Folder> folder=folderService.findFolderIdByPath(userSession.getCurrDirectory());
+            if(folder.isPresent()){
+                com.java.model.File fileDB=fileService.findByFileNameAndFolderParent(fileName,folder.get());
+                fileService.deleteById(fileDB.getItemId());
+            }
             out.println(ResponseCode.FILE_COMPLETED_TRANSFER.getResponse("File deleted successfully"));
             log.info("File {} deleted successfully", file.getName());
         } else {

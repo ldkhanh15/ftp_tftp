@@ -12,19 +12,17 @@ import java.util.Set;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString
 public class Folder extends Item implements Serializable {
 
     @Column(name = "folder_name", nullable = false, length = 255)
     private String folderName;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "parent_id")
-    private Folder parentFolder;
-
     @OneToMany(mappedBy = "parentFolder")
     private Set<Folder> subFolders;
 
-    @OneToMany(mappedBy = "parentFolder", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "parentFolder")
     private List<File> files;
+
+    @ManyToOne
+    @JoinColumn(name = "parent_id")
+    private Folder parentFolder;
 }

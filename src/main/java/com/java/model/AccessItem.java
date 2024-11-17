@@ -1,5 +1,6 @@
 package com.java.model;
 
+import com.java.enums.AccessType;
 import jakarta.persistence.*;
 import lombok.*;
 
