@@ -1,201 +1,376 @@
 package com.java.FTPClient;
-import java.io.*;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.util.Scanner;
 
-public class Client {
-    private Socket controlSocket;
-    private PrintWriter controlOutWriter;
-    private BufferedReader controlIn;
-    private ServerSocket dataSocket;
-    private Socket dataConnection;
-    private String serverAddress;
-    private int controlPort;
-    private int dataPort;
-    private String fileSeparator = "/";
+import javax.swing.*;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeModel;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.io.File;
 
-    public Client(String serverAddress, int controlPort, int dataPort) {
-        this.serverAddress = serverAddress;
-        this.controlPort = controlPort;
-        this.dataPort = dataPort;
-    }
+public class Client extends JFrame {
 
-    public void connect() throws IOException {
-        // Establish control connection
-        controlSocket = new Socket(serverAddress, controlPort);
-        controlOutWriter = new PrintWriter(controlSocket.getOutputStream(), true);
-        controlIn = new BufferedReader(new InputStreamReader(controlSocket.getInputStream()));
+    private JTree localTree, remoteTree;
+    private JTable localTable, remoteTable;
+    private JTextArea logArea;
 
-        // Display server greeting
-        System.out.println("Server: " + controlIn.readLine());
-    }
+    public Client() {
+        setTitle("FTP Client");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setSize(1200, 800);  // Increase frame size to fit all components
+        setLocationRelativeTo(null);
 
-    public void sendCommand(String command) {
-        controlOutWriter.println(command);
-    }
-
-    public String readServerResponse() throws IOException {
-        return controlIn.readLine();
-    }
-    private void active() throws IOException {
-        dataSocket = new ServerSocket(dataPort);
-        // Send file to server
-        int p1 = dataPort / 256;
-        int p2 = dataPort % 256;
-        sendCommand("PORT 127,0,0,1," + p1 + "," + p2);
-        System.out.println("Server: " + readServerResponse());
-
-        dataConnection = dataSocket.accept();
-    }
-
-    public void passive() throws IOException {
-        sendCommand("PASV");
-        String response = readServerResponse();
-        String[] parts = response.split("\\(|\\)")[1].split(",");
-
-        String ip = parts[0] + "." + parts[1] + "." + parts[2] + "." + parts[3];
-        int port = Integer.parseInt(parts[4]) * 256 + Integer.parseInt(parts[5]);
-
-
-        dataConnection = new Socket(ip, port);
-        System.out.println("Connecting to IP: " + ip + " on port: " + port);
-    }
-    public void retrieveFile() throws IOException {
-        // Get the user's home directory and set the download folder
-        String downloadDir = System.getProperty("user.home") + "/downloads/";
-        System.out.println(downloadDir);
-        // Ensure the directory exists
-        File directory = new File(downloadDir);
-        if (!directory.exists()) {
-            directory.mkdirs(); // Create directory if it doesn't exist
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
-        int type = 0;
-        Scanner scanner = new Scanner(System.in);
-        while (type != 1 && type != 2) {
-            System.out.println("Chon type:");
-            System.out.println("1. Active");
-            System.out.println("2. Passive");
-            type = scanner.nextInt();
-            if (type == 1 || type == 2) {
-                break;
+        // Create connection panel
+        JPanel connectionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        connectionPanel.add(new JLabel("Host:"));
+        connectionPanel.add(new JTextField(10));
+        connectionPanel.add(new JLabel("Username:"));
+        connectionPanel.add(new JTextField(10));
+        connectionPanel.add(new JLabel("Password:"));
+        connectionPanel.add(new JPasswordField(10));
+        connectionPanel.add(new JLabel("Port:"));
+        connectionPanel.add(new JTextField(5));
+        connectionPanel.add(new JButton("Quickconnect"));
+
+        // Create log area
+        logArea = new JTextArea(50, 20);
+        logArea.setEditable(false);
+        JScrollPane logScrollPane = new JScrollPane(logArea);
+
+        // Create a JPanel to hold the log area with a fixed size
+        JPanel logPanel = new JPanel(new BorderLayout());
+        logPanel.add(logScrollPane, BorderLayout.CENTER);
+        logPanel.setPreferredSize(new Dimension(1200, 150)); // Set a fixed size for the log panel
+
+        // Create local tree and table
+        localTree = createLocalTree();
+        localTable = createFileTable();
+
+        // Create remote tree and table
+        remoteTree = createRemoteTree();
+        remoteTable = createFileTableRemote();
+
+        // Add double-click listener to trees
+        addTreeListenersRemote();
+
+        // Add double-click listener to trees
+        addTreeListeners();
+
+        // Split panes for trees and tables
+        JSplitPane localSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
+                new JScrollPane(localTree), new JScrollPane(localTable));
+        JSplitPane remoteSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
+                new JScrollPane(remoteTree), new JScrollPane(remoteTable));
+        JSplitPane mainSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
+                localSplitPane, remoteSplitPane);
+
+        // Main layout
+        setLayout(new BorderLayout());
+        add(connectionPanel, BorderLayout.NORTH);
+        add(mainSplitPane, BorderLayout.CENTER);
+        add(logPanel, BorderLayout.SOUTH); // Add the logPanel here
+
+        setVisible(true);
+        System.out.println("GUI is visible!");
+    }
+
+    private JTree createLocalTree() {
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode("This Computer");
+        File[] roots = File.listRoots(); // Lấy danh sách các ổ đĩa
+
+        if (roots != null) {
+            for (File rootDrive : roots) {
+                DefaultMutableTreeNode driveNode = new DefaultMutableTreeNode(rootDrive.getPath());
+                driveNode.add(new DefaultMutableTreeNode("Loading...")); // Placeholder để tải lười
+                root.add(driveNode);
             }
         }
-        if (type == 1) {
-            active();
-        } else {
-            passive();
-        }
-        sendCommand("RETR " + "actor_movies.txt");
-        System.out.println("Server: " + readServerResponse());
 
-        // Create the output file with the specified download directory
-        try (InputStream dataIn = dataConnection.getInputStream();
-             FileOutputStream fileOut = new FileOutputStream(downloadDir + "actor_movies.txt")) {
+        DefaultTreeModel model = new DefaultTreeModel(root);
+        JTree tree = new JTree(model);
 
-            byte[] buffer = new byte[1024];
-            int bytesRead;
-            while ((bytesRead = dataIn.read(buffer)) != -1) {
-                fileOut.write(buffer, 0, bytesRead);
-            }
-            System.out.println("File download complete.");
-        }
-        System.out.println("Server: " + readServerResponse());
-        if (dataSocket != null) {
-            dataSocket.close();
-        }
-        if (dataConnection != null) {
-            dataConnection.close();
-        }
-    }
-    public void storeFile() throws IOException {
-        int type = 0;
-        Scanner scanner = new Scanner(System.in);
-        while (type != 1 && type != 2) {
-            System.out.println("Chon type:");
-            System.out.println("1. Active");
-            System.out.println("2. Passive");
-            type = scanner.nextInt();
-            if (type == 1 || type == 2) {
-                break;
-            }
-        }
-        if (type == 1) {
-            active();
-        } else {
-            passive();
-        }
-        sendCommand("STOR " + "21d936f5-5150-4ff2-8cc3-00b9044f4439.jpg");
-        String response = readServerResponse();
-        System.out.println("Server: " + response);
-        if (!response.equalsIgnoreCase("File already exists")) {
-
-            try (FileInputStream fileIn = new FileInputStream("D:\\Dowloads\\21d936f5-5150-4ff2-8cc3-00b9044f4439.jpg");
-                 OutputStream dataOut = dataConnection.getOutputStream()) {
-
-                byte[] buffer = new byte[1024];
-                int bytesRead;
-                while ((bytesRead = fileIn.read(buffer)) != -1) {
-                    dataOut.write(buffer, 0, bytesRead);
+        // Lắng nghe sự kiện mở rộng để tải nội dung ổ đĩa
+        tree.addTreeWillExpandListener(new javax.swing.event.TreeWillExpandListener() {
+            @Override
+            public void treeWillExpand(javax.swing.event.TreeExpansionEvent event) throws javax.swing.tree.ExpandVetoException {
+                DefaultMutableTreeNode node = (DefaultMutableTreeNode) event.getPath().getLastPathComponent();
+                if (node.getChildCount() == 1 && node.getChildAt(0).toString().equals("Loading...")) {
+                    node.removeAllChildren(); // Xóa placeholder
+                    File file = new File(node.toString());
+                    loadFileSystemLazy(node, file);
+                    ((DefaultTreeModel) tree.getModel()).reload(node);
                 }
-                System.out.println("File upload complete.");
-            } catch (IOException e) {
-                e.printStackTrace();
-                System.out.println(e.getMessage());
             }
-            System.out.println("Server: " + readServerResponse());
-        }
-        if (dataSocket != null) {
-            dataSocket.close();
-        }
-        if (dataConnection != null) {
-            dataConnection.close();
-        }
 
+            @Override
+            public void treeWillCollapse(javax.swing.event.TreeExpansionEvent event) throws javax.swing.tree.ExpandVetoException {
+                // Xử lý sự kiện thu gọn nếu cần
+            }
+        });
+
+        return tree;
     }
 
-    public void closeConnections() throws IOException {
-        if (dataSocket != null) dataSocket.close();
-        if (controlSocket != null) {
-            sendCommand("QUIT");
-            controlSocket.close();
+    private void loadFileSystemLazy(DefaultMutableTreeNode parentNode, File file) {
+        File[] files = file.listFiles(File::isDirectory); // Only list directories for lazy loading
+        if (files != null) {
+            for (File f : files) {
+                DefaultMutableTreeNode childNode = new DefaultMutableTreeNode(f.getName());
+                childNode.add(new DefaultMutableTreeNode("Loading...")); // Placeholder
+                parentNode.add(childNode);
+            }
         }
-        System.out.println("Disconnected from server.");
+    }
+
+    private JTable createFileTable() {
+        String[] columnNames = {"Name", "Size", "Type", "Last Modified"};
+        DefaultTableModel model = new DefaultTableModel(columnNames, 0);
+        return new JTable(model);
+    }
+    private JTable createFileTableRemote() {
+        String[] columnNames = {"Name", "Size", "Type", "Last Modified"};
+        DefaultTableModel model = new DefaultTableModel(columnNames, 0);
+        JTable table = new JTable(model);
+
+        // Tạo popup menu
+        JPopupMenu popupMenu = new JPopupMenu();
+
+        // Thêm mục "Tạo mới Folder"
+        JMenuItem createFolderItem = new JMenuItem("Tạo mới folder");
+        createFolderItem.addActionListener(e -> {
+            DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) remoteTree.getLastSelectedPathComponent();
+            if (selectedNode != null) {
+                String folderName = JOptionPane.showInputDialog(remoteTree, "Nhập tên folder mới:");
+                if (folderName != null && !folderName.isEmpty()) {
+                    DefaultMutableTreeNode newFolder = new DefaultMutableTreeNode(folderName);
+                    selectedNode.add(newFolder);
+                    ((DefaultTreeModel) remoteTree.getModel()).reload(selectedNode);
+
+                    // Sau khi tạo folder mới, cập nhật bảng với các file giả
+                    updateFileTableRemote(remoteTable, folderName);
+                }
+            }
+        });
+        popupMenu.add(createFolderItem);
+
+        // Thêm mục "Tạo mới File"
+        JMenuItem createFileItem = new JMenuItem("Tạo mới File");
+        createFileItem.addActionListener(e -> {
+            String fileName = JOptionPane.showInputDialog(table, "Nhập tên file mới:");
+            if (fileName != null && !fileName.isEmpty()) {
+                model.addRow(new Object[]{fileName, "0 KB", "File", "2024-11-19"});
+            }
+        });
+        popupMenu.add(createFileItem);
+
+        // Thêm mục "Upload file"
+        JMenuItem uploadFileItem = new JMenuItem("Upload file");
+        uploadFileItem.addActionListener(e -> {
+            String fileName = JOptionPane.showInputDialog(table, "Nhập tên file để upload:");
+            if (fileName != null && !fileName.isEmpty()) {
+                model.addRow(new Object[]{fileName, "0 KB", "File", "2024-11-19"});
+            }
+        });
+        popupMenu.add(uploadFileItem);
+
+        // Thêm mục "Đổi tên"
+        JMenuItem renameFileItem = new JMenuItem("Đổi tên");
+        renameFileItem.addActionListener(e -> {
+            int selectedRow = table.getSelectedRow();
+            if (selectedRow != -1) {
+                String currentName = (String) model.getValueAt(selectedRow, 0);
+                String newName = JOptionPane.showInputDialog(table, "Nhập tên mới:", currentName);
+                if (newName != null && !newName.isEmpty()) {
+                    model.setValueAt(newName, selectedRow, 0);
+                }
+            }
+        });
+        popupMenu.add(renameFileItem);
+
+        // Gắn popup menu vào bảng
+        table.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                if (SwingUtilities.isRightMouseButton(e)) {
+                    int row = table.rowAtPoint(e.getPoint());
+                    table.setRowSelectionInterval(row, row);
+                    popupMenu.show(table, e.getX(), e.getY());
+                }
+            }
+        });
+
+        return table;
+    }
+    private JTree createTree(String rootName) {
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(rootName);
+        DefaultTreeModel model = new DefaultTreeModel(root);
+        return new JTree(model);
+    }
+
+    private void addTreeListeners() {
+        localTree.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    DefaultMutableTreeNode selectedNode =
+                            (DefaultMutableTreeNode) localTree.getLastSelectedPathComponent();
+                    if (selectedNode != null) {
+                        File selectedFile = getFileFromNode(selectedNode, new File(System.getProperty("user.home")));
+                        if (selectedFile != null && selectedFile.isDirectory()) {
+                            logArea.append("Local folder selected: " + selectedFile.getAbsolutePath() + "\n");
+                            updateFileTable(localTable, selectedFile);
+                        }
+                    }
+                }
+            }
+        });
+    }
+    private void addTreeListenersRemote() {
+        remoteTree.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    DefaultMutableTreeNode selectedNode =
+                            (DefaultMutableTreeNode) remoteTree.getLastSelectedPathComponent();
+                    if (selectedNode != null) {
+                        String selectedFolder = selectedNode.toString();
+                        logArea.append("Remote folder selected: " + selectedFolder + "\n");
+                        updateFileTableRemote(remoteTable, selectedFolder);  // Update the table with folder contents
+                    }
+                }
+            }
+        });
+    }
+    private JTree createRemoteTree() {
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode("Remote Files");
+        DefaultMutableTreeNode folder1 = new DefaultMutableTreeNode("Folder1");
+        DefaultMutableTreeNode folder2 = new DefaultMutableTreeNode("Folder2");
+        root.add(folder1);
+        root.add(folder2);
+
+        DefaultTreeModel model = new DefaultTreeModel(root);
+        JTree tree = new JTree(model);
+
+        // Tạo popup menu
+        JPopupMenu popupMenu = new JPopupMenu();
+
+        // Thêm mục "Tạo mới folder"
+        JMenuItem createFolderItem = new JMenuItem("Tạo mới folder");
+        createFolderItem.addActionListener(e -> {
+            DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
+            if (selectedNode != null) {
+                String folderName = JOptionPane.showInputDialog(tree, "Nhập tên folder mới:");
+                if (folderName != null && !folderName.isEmpty()) {
+                    DefaultMutableTreeNode newFolder = new DefaultMutableTreeNode(folderName);
+                    selectedNode.add(newFolder);
+                    ((DefaultTreeModel) tree.getModel()).reload(selectedNode);
+                }
+            }
+        });
+        popupMenu.add(createFolderItem);
+
+        // Thêm mục "Đổi tên folder"
+        JMenuItem renameFolderItem = new JMenuItem("Đổi tên folder");
+        renameFolderItem.addActionListener(e -> {
+            DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
+            if (selectedNode != null && selectedNode != root) {
+                String newName = JOptionPane.showInputDialog(tree, "Nhập tên mới:", selectedNode.toString());
+                if (newName != null && !newName.isEmpty()) {
+                    selectedNode.setUserObject(newName);
+                    ((DefaultTreeModel) tree.getModel()).reload(selectedNode);
+                }
+            }
+        });
+        popupMenu.add(renameFolderItem);
+
+        // Gắn popup menu vào cây
+        tree.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                if (SwingUtilities.isRightMouseButton(e)) {
+                    int row = tree.getClosestRowForLocation(e.getX(), e.getY());
+                    tree.setSelectionRow(row);
+                    popupMenu.show(tree, e.getX(), e.getY());
+                }
+            }
+        });
+
+        // Thêm sự kiện double-click để load folder
+        tree.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
+                    if (selectedNode != null) {
+                        String selectedFolder = selectedNode.toString();
+                        logArea.append("Remote folder selected: " + selectedFolder + "\n");
+                        updateFileTableRemote(remoteTable, selectedFolder);
+                    }
+                }
+            }
+        });
+
+        return tree;
+    }
+    private void updateFileTableRemote(JTable table, String folderName) {
+        String[] columnNames = {"Name", "Size", "Type", "Last Modified"};
+
+        // Dữ liệu giả cho các folder
+        Object[][] data = null;
+        if ("Folder1".equals(folderName)) {
+            data = new Object[][] {
+                    {"File1.txt", "1 KB", "File", "2024-11-17"},
+                    {"File2.jpg", "2 MB", "File", "2024-11-16"},
+            };
+        } else if ("Folder2".equals(folderName)) {
+            data = new Object[][] {
+                    {"FileA.pdf", "3 MB", "File", "2024-11-15"},
+                    {"FileB.docx", "1.5 MB", "File", "2024-11-14"},
+            };
+        }
+
+        // Cập nhật model bảng
+        DefaultTableModel model = new DefaultTableModel(data, columnNames);
+        table.setModel(model);
+    }
+    private File getFileFromNode(DefaultMutableTreeNode node, File baseDir) {
+        StringBuilder path = new StringBuilder(node.getUserObject().toString());
+        while ((node = (DefaultMutableTreeNode) node.getParent()) != null && node.getParent() != null) {
+            path.insert(0, node.getUserObject() + File.separator);
+        }
+        return new File(path.toString());
+    }
+
+
+    private void updateFileTable(JTable table, File folder) {
+        String[] columnNames = {"Name", "Size", "Type", "Last Modified"};
+        File[] files = folder.listFiles();
+        Object[][] data = {};
+        if (files != null) {
+            data = new Object[files.length][4];
+            for (int i = 0; i < files.length; i++) {
+                File f = files[i];
+                data[i][0] = f.getName();
+                data[i][1] = f.isFile() ? f.length() + " bytes" : "-";
+                data[i][2] = f.isDirectory() ? "Folder" : "File";
+                data[i][3] = new java.util.Date(f.lastModified());
+            }
+        }
+        DefaultTableModel model = new DefaultTableModel(data, columnNames);
+        table.setModel(model);
     }
 
     public static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
-        Client ftpClient = new Client("localhost", 21, 5000);
-
         try {
-            ftpClient.connect();
-
-            while (true) {
-                System.out.println("Choose an option: \n1. Retrieve file\n2. Store file\n3. Quit");
-                int choice = scanner.nextInt();
-                scanner.nextLine(); // Consume newline
-
-                switch (choice) {
-                    case 1:
-                        ftpClient.retrieveFile();
-                        break;
-
-                    case 2:
-                        ftpClient.storeFile();
-                        break;
-
-                    case 3:
-                        ftpClient.closeConnections();
-                        scanner.close();
-                        return;
-
-                    default:
-                        System.out.println("Invalid choice. Try again.");
-                }
-            }
-        } catch (IOException e) {
-            System.out.println(e.getMessage());
+            SwingUtilities.invokeLater(Client::new);
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
