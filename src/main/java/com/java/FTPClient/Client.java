@@ -47,7 +47,7 @@ public class Client extends JFrame {
         // Create a JPanel to hold the log area with a fixed size
         JPanel logPanel = new JPanel(new BorderLayout());
         logPanel.add(logScrollPane, BorderLayout.CENTER);
-        logPanel.setPreferredSize(new Dimension(1200, 150)); // Set a fixed size for the log panel
+        logPanel.setPreferredSize(new Dimension(1200, 150));
 
         // Create local tree and table
         localTree = createLocalTree();

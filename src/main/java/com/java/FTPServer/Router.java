@@ -2,8 +2,11 @@ package com.java.FTPServer;
 
 import com.java.FTPServer.enums.Command;
 import com.java.FTPServer.enums.ResponseCode;
+import com.java.FTPServer.enums.UserStatus;
 import com.java.FTPServer.handle.*;
 import com.java.FTPServer.system.UserSession;
+import com.java.FTPServer.system.UserSessionContext;
+import com.java.FTPServer.ulti.LogHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -25,7 +28,6 @@ public class Router {
     public void executeCommand(String command, PrintWriter controlOutWriter, UserSession userSession) {
 
         this.controlOutWriter = controlOutWriter;
-        System.out.println(userSession.getCurrDirectory());
         String[] commands;
         commands = command.split(" ");
         Command commandType = Command.fromString(commands[0]);
@@ -33,7 +35,16 @@ public class Router {
             sendMsgToClient(ResponseCode.NOT_IMPLEMENTED.getResponse());
             return;
         }
-
+        if(UserSessionContext.getUserSession()!=null && UserSessionContext.getUserSession().getStatus()==
+                UserStatus.LOGGED_IN){
+            String log="Command: {}"+commands[0]+"\n";
+            if(commands.length > 1){
+                log+="Args: {}"+ commands[1]+"\n";
+            }
+            log+="=======end=======";
+            LogHandler.write("logs/users",UserSessionContext.getUserSession().getUsername()+".txt",
+                    log);
+        }
         log.info("Command: {}", commands[0]);
         if(commands.length > 1){
             log.info("Args: {}", commands[1]);

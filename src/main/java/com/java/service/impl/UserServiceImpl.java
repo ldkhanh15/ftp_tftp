@@ -8,6 +8,7 @@ import com.java.model.User;
 import com.java.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -35,15 +36,41 @@ public class UserServiceImpl implements UserService {
         ).toList();
     }
 
+    @Override
+    public List<User> findAll() {
+        return userRepository.findAll();
+    }
+
     public User findByUsername(String username){
-        return userRepository.findByUsername(username).orElseThrow(
-                () -> new DataNotFoundException("User with username " + username + " not found")
-        );
+        return userRepository.findByUsername(username).orElse(null);
     }
 
 
     @Override
     public UserDTO findByUserNameDTO(String username) {
         return userRepository.findUserDTOByUsername(username).orElse(null);
+    }
+
+    @Override
+    public User findUserById(Long userId) {
+        return userRepository.findById(userId).orElse(null);
+    }
+
+    @Override
+    @Transactional
+    public User save(User user) {
+        return userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
+    public void deleteUser(Long userId) {
+        userRepository.deleteById(userId);
+    }
+
+    @Override
+    @Transactional
+    public void deleteUserByUsername(String username) {
+        userRepository.deleteByUsername(username);
     }
 }

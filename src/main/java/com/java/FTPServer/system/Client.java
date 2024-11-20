@@ -2,7 +2,10 @@ package com.java.FTPServer.system;
 
 import com.java.FTPServer.Router;
 import com.java.FTPServer.enums.ResponseCode;
+import com.java.FTPServer.ulti.LogHandler;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -17,6 +20,8 @@ import java.net.Socket;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@Getter
+@Setter
 public class Client extends Thread {
     private Socket controlSocket;
     private final Router router;
@@ -42,7 +47,8 @@ public class Client extends Thread {
                     router.executeCommand(controlIn.readLine(),controlOutWriter, UserSessionContext.getUserSession());
                 }
             } catch (Exception e) {
-                log.error(e.getMessage());
+                LogHandler.write("logs/servers","error.txt",
+                         e.getMessage(),e);
             } finally {
                 try {
                     if (controlIn != null) {
@@ -52,8 +58,12 @@ public class Client extends Thread {
                         controlOutWriter.close();
                     }
                     controlSocket.close();
+                    LogHandler.write("logs/servers","error.txt",
+                            "Sockets closed and worker stopped");
                     printOutput("Sockets closed and worker stopped");
                 } catch (IOException e) {
+                    LogHandler.write("logs/servers","error.txt",
+                            "Could not close sockets");
                     printOutput("Could not close sockets");
                 }
             }

@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -14,4 +15,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByUsername(String username);
     @Query("SELECT new com.java.dto.UserDTO(u.id, u.username, u.role) FROM User u WHERE u.username = :username")
     Optional<UserDTO> findUserDTOByUsername(@Param("username") String username);
+
+    @Transactional
+    void deleteByUsername(String username);
 }

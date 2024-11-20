@@ -27,8 +27,7 @@ public class User implements Serializable {
     @Column(nullable = false, length = 255)
     private String password;
 
-    @Column(name = "storage_quota")
-    private Double storageQuota;
+    private Boolean isEnabled;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

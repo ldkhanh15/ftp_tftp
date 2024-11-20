@@ -27,6 +27,7 @@ public class AuthHandleImpl implements AuthHandle {
     @Override
     public void handlePass(String password, PrintWriter out, UserSession userSession) {
         if(userController.login(userSession.getUsername(), password)) {
+            userSession.setStatus(UserStatus.LOGGED_IN);
             out.println(ResponseCode.USER_LOGGED_IN.getResponse("Login Successful"));
         }
         else {
