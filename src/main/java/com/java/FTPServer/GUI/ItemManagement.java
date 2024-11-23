@@ -1,6 +1,8 @@
 package com.java.FTPServer.GUI;
 
 import com.java.FTPServer.system.ConstFTP;
+import com.java.service.FileService;
+import com.java.service.FolderService;
 import org.springframework.stereotype.Component;
 
 import javax.swing.*;
@@ -20,6 +22,14 @@ public class ItemManagement {
     private static JTree remoteTree;
     private static JTable remoteTable;
     private static String folderRoot = ConstFTP.ROOT_DIR;
+    private final FileService fileService;
+    private final FolderService folderService;
+
+    public ItemManagement(FileService fileService, FolderService folderService) {
+        this.fileService = fileService;
+        this.folderService = folderService;
+    }
+
 
     public static JPanel createFileFolderPanel() {
         // Create remote tree and table
@@ -65,6 +75,8 @@ public class ItemManagement {
                     if (newFolder.mkdir()) {
                         DefaultMutableTreeNode newFolderNode = new DefaultMutableTreeNode(newFolder.getName());
                         selectedNode.add(newFolderNode);
+                        File folderParent = getFolderFromNode(selectedNode);
+                        System.out.println("Path parent: "+folderParent.getAbsolutePath());
                         ((DefaultTreeModel) tree.getModel()).reload(selectedNode);
                     }
                 }
@@ -130,17 +142,6 @@ public class ItemManagement {
         String[] columnNames = {"Name", "Size", "Type", "Last Modified"};
         File[] files = folder.listFiles();
 
-        // Debugging: Check if files are returned correctly
-        System.out.println("Listing files in folder: " + folder.getAbsolutePath());
-        if (files == null) {
-            System.out.println("No files found or cannot access the folder: " + folder.getAbsolutePath());
-        } else {
-            System.out.println("Files found: " + files.length);
-            for (File file : files) {
-                System.out.println("File: " + file.getName() + " | Is Directory: " + file.isDirectory());
-            }
-        }
-
         Object[][] data = new Object[files != null ? files.length : 0][4];
         if (files != null) {
             for (int i = 0; i < files.length; i++) {
@@ -160,13 +161,57 @@ public class ItemManagement {
 
         JMenuItem createFolderItem = new JMenuItem("Tạo mới folder");
         createFolderItem.addActionListener(e -> {
-            // Xử lý tạo folder
+            DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) remoteTree.getLastSelectedPathComponent();
+            if (selectedNode != null) {
+                String folderName = JOptionPane.showInputDialog(remoteTree, "Nhập tên folder mới:");
+                if (folderName != null && !folderName.isEmpty()) {
+                    DefaultMutableTreeNode newFolder = new DefaultMutableTreeNode(folderName);
+                    selectedNode.add(newFolder);
+                    ((DefaultTreeModel) remoteTree.getModel()).reload(selectedNode);
+                }
+            }
         });
         popupMenu.add(createFolderItem);
 
         JMenuItem createFileItem = new JMenuItem("Tạo mới File");
         createFileItem.addActionListener(e -> {
-            // Xử lý tạo file
+            JFileChooser fileChooser = new JFileChooser();
+
+            int result = fileChooser.showOpenDialog(table);
+            DefaultMutableTreeNode selectedNode =
+                    (DefaultMutableTreeNode) remoteTree.getLastSelectedPathComponent();
+
+            if (selectedNode != null) {
+                // Resolve the folder/file from the tree node
+                File selectedFile = getFileFromNode(selectedNode);
+
+                if (selectedFile != null && selectedFile.isDirectory()) {
+                    if (result == JFileChooser.APPROVE_OPTION) {
+                        // Get the selected file to upload
+                        File uploadFile = fileChooser.getSelectedFile();
+                        System.out.println("Selected file to upload: " + uploadFile.getAbsolutePath());
+
+                        // Create the destination file path (selected folder + file name)
+                        File destinationFile = new File(selectedFile, uploadFile.getName());
+
+                        try {
+                            // Check if the file already exists in the destination folder
+                            if (!destinationFile.exists()) {
+                                // Copy the file to the selected folder
+                                Files.copy(uploadFile.toPath(), destinationFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                                System.out.println("File uploaded successfully to " + destinationFile.getAbsolutePath());
+                            } else {
+                                System.out.println("File already exists in the destination folder.");
+                            }
+                            updateFileTable(table,selectedFile);
+
+                        } catch (IOException ex) {
+                            ex.printStackTrace();
+                            JOptionPane.showMessageDialog(table, "Error uploading file: " + ex.getMessage());
+                        }
+                    }
+                }
+            }
         });
         popupMenu.add(createFileItem);
 
