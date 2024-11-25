@@ -12,5 +12,14 @@ import java.util.List;
 
 public interface AccessRepository extends JpaRepository<AccessItem,Long> {
     @Query("SELECT ai FROM AccessItem ai WHERE ai.item.itemId = :folderId AND ai.user.id = :userId")
-    List<AccessItem> findAccessItemsByFolderIdAndUserId(@Param("folderId") Long folderId, @Param("userId") Long userId);
+    AccessItem findAccessItemsByFolderIdAndUserId(@Param("folderId") Long folderId, @Param("userId") Long userId);
+
+    @Query("DELETE FROM AccessItem ai WHERE ai.item.itemId = :itemId AND ai.user.id = :userId")
+    void deleteAccessItemByItemIdAndUserId(@Param("itemId") Long itemId, @Param("userId") Long userId);
+    
+    
+    
+    List<AccessItem> findByItem(Item item);
+
+    AccessItem findByUserAndItem(User user, Item item);
 }

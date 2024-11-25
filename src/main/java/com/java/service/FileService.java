@@ -12,4 +12,6 @@ public interface FileService {
     File getFileById(Long id);
     List<File> getAll();
     File findByFileNameAndFolderParent(String fileName, Folder parent);
+
+    File save(String fullPath, java.io.File file);
 }

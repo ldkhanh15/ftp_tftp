@@ -26,6 +26,7 @@ public class FolderServiceImpl implements FolderService {
     }
 
     @Override
+    @Transactional
     public Folder save(Folder folder) {
         return folderRepository.save(folder);
     }
@@ -140,8 +141,9 @@ public class FolderServiceImpl implements FolderService {
         if (isOwner(user, folder)) {
             return true;
         }
-        return accessItemRepository.findAccessItemsByFolderIdAndUserId(folder.getItemId(), user.getId()).stream()
-                .anyMatch(accessItem -> checkAccessType(accessItem.getAccessType(), accessType));
+//        return accessItemRepository.findAccessItemsByFolderIdAndUserId(folder.getItemId(), user.getId()).stream()
+//                .anyMatch(accessItem -> checkAccessType(accessItem.getAccessType(), accessType));
+        return accessItemRepository.findAccessItemsByFolderIdAndUserId(folder.getItemId(), user.getId()).getAccessType().equals(accessType);
     }
 
     private boolean checkAccessType(AccessType granted, AccessType required) {

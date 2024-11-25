@@ -4,6 +4,8 @@ import com.java.FTPServer.enums.ResponseCode;
 import com.java.FTPServer.enums.TransferType;
 import com.java.FTPServer.handle.FileHandle;
 import com.java.FTPServer.system.UserSession;
+import com.java.controller.FileController;
+import com.java.controller.FolderController;
 import com.java.model.Folder;
 import com.java.service.FileService;
 import com.java.service.FolderService;
@@ -19,8 +21,8 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class FileHandleImpl implements FileHandle {
     private final ConnectionHandleImpl connectionHandle;
-    private final FolderService folderService;
-    private final FileService fileService;
+    private final FileController fileController;
+    private final FolderController folderController;
     private UserSession userSession;
     @Override
     public void uploadFile(PrintWriter out,String fileName,  UserSession userSession) {
@@ -49,18 +51,18 @@ public class FileHandleImpl implements FileHandle {
         connectionHandle.closeDataConnection();
     }
     private void saveFile(File f){
-        Optional<Folder> folder=folderService.findFolderIdByPath(userSession.getCurrDirectory());
+        Optional<Folder> folder=folderController.findFolderIdByPath(userSession.getCurrDirectory());
         if(folder.isPresent()){
             com.java.model.File file=new com.java.model.File(f.getName(),f.getPath(),f.length(),
                     getFileType(f.getName()),folder.get());
-            fileService.save(file);
+            fileController.save(file);
         }
     }
     private void saveFile(com.java.model.File fileDB,File f){
-        Optional<Folder> folder=folderService.findFolderIdByPath(userSession.getCurrDirectory());
+        Optional<Folder> folder=folderController.findFolderIdByPath(userSession.getCurrDirectory());
         if(folder.isPresent() && fileDB !=null){
             fileDB.setFileSize(f.length());
-            fileService.save(fileDB);
+            fileController.save(fileDB);
         }
     }
     private String getFileType(String fileName) {
@@ -103,9 +105,9 @@ public class FileHandleImpl implements FileHandle {
         } else {
             f = new File(userSession.getCurrDirectory() + "/" + fileName);
             com.java.model.File file=null;
-            Optional<Folder> folder=folderService.findFolderIdByPath(userSession.getCurrDirectory());
+            Optional<Folder> folder=folderController.findFolderIdByPath(userSession.getCurrDirectory());
             if(folder.isPresent()){
-                file=fileService.findByFileNameAndFolderParent(fileName,folder.get());
+                file=fileController.findByFileNameAndFolderParent(fileName,folder.get());
             }
             if (f.exists()) {
                 // lay file ra file de append
@@ -152,10 +154,10 @@ public class FileHandleImpl implements FileHandle {
             return;
         }
         if (file.delete()) {
-            Optional<Folder> folder=folderService.findFolderIdByPath(userSession.getCurrDirectory());
+            Optional<Folder> folder=folderController.findFolderIdByPath(userSession.getCurrDirectory());
             if(folder.isPresent()){
-                com.java.model.File fileDB=fileService.findByFileNameAndFolderParent(fileName,folder.get());
-                fileService.deleteById(fileDB.getItemId());
+                com.java.model.File fileDB=fileController.findByFileNameAndFolderParent(fileName,folder.get());
+                fileController.deleteById(fileDB.getItemId());
             }
             out.println(ResponseCode.FILE_COMPLETED_TRANSFER.getResponse("File deleted successfully"));
             log.info("File {} deleted successfully", file.getName());

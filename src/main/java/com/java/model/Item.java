@@ -46,19 +46,19 @@ public class Item implements Serializable {
     @OneToMany(mappedBy = "item")
     private Set<AccessItem> accessItems;
 
-    @PrePersist
-    public void handleBeforeCreate() {
-        this.createdBy = UserSessionContext.getUserSession().getUsername() != null ? UserSessionContext.getUserSession().getUsername() : "";
-        ZoneId zoneId = ZoneId.of("Asia/Bangkok"); // GMT+7
-        ZonedDateTime updatedAtWithZone = Instant.now().atZone(zoneId);
-        this.createdAt = updatedAtWithZone.toLocalDateTime();
-    }
-
-    @PreUpdate
-    public void handleBeforeUpdate() {
-        this.updatedBy = UserSessionContext.getUserSession().getUsername() != null ? UserSessionContext.getUserSession().getUsername() : "";
-        ZoneId zoneId = ZoneId.of("Asia/Bangkok"); // GMT+7
-        ZonedDateTime updatedAtWithZone = Instant.now().atZone(zoneId);
-        this.updatedAt = updatedAtWithZone.toLocalDateTime();
-    }
+//    @PrePersist
+//    public void handleBeforeCreate() {
+//        this.createdBy = UserSessionContext.getUserSession().getUsername() != null ? UserSessionContext.getUserSession().getUsername() : "";
+//        ZoneId zoneId = ZoneId.of("Asia/Bangkok");
+//        ZonedDateTime updatedAtWithZone = Instant.now().atZone(zoneId);
+//        this.createdAt = updatedAtWithZone.toLocalDateTime();
+//    }
+//
+//    @PreUpdate
+//    public void handleBeforeUpdate() {
+//        this.updatedBy = UserSessionContext.getUserSession().getUsername() != null ? UserSessionContext.getUserSession().getUsername() : "";
+//        ZoneId zoneId = ZoneId.of("Asia/Bangkok"); // GMT+7
+//        ZonedDateTime updatedAtWithZone = Instant.now().atZone(zoneId);
+//        this.updatedAt = updatedAtWithZone.toLocalDateTime();
+//    }
 }

@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -18,4 +19,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Transactional
     void deleteByUsername(String username);
+
+    List<User> findByUsernameContaining(String keyword);
 }

@@ -6,6 +6,8 @@ import com.java.FTPServer.handle.DirectoryHandle;
 import com.java.FTPServer.system.ConstFTP;
 import com.java.FTPServer.system.UserSession;
 import com.java.FTPServer.system.UserSessionContext;
+import com.java.controller.FolderController;
+import com.java.controller.UserController;
 import com.java.enums.AccessType;
 import com.java.model.Folder;
 import com.java.model.User;
@@ -21,17 +23,19 @@ import java.util.Optional;
 
 @Component
 public class DirectoryHandleImpl implements DirectoryHandle {
-    private final FolderService folderService;
-    private final UserService userService;
-    public DirectoryHandleImpl(FolderService folderService, UserService userService) {
-        this.folderService = folderService;
-        this.userService = userService;
+    private final UserController userController;
+    private final FolderController folderController;
+
+    public DirectoryHandleImpl(UserController userController, FolderController folderController) {
+        this.userController = userController;
+        this.folderController = folderController;
     }
+
     private void saveDirectory(Folder folder){
-        folderService.save(folder);
+        folderController.save(folder);
     }
     private void deleteDirectory(Folder folder){
-        folderService.deleteById(folder.getItemId());
+        folderController.deleteById(folder.getItemId());
     }
     @Override
     public void createDirectory( PrintWriter out,String directoryName, String currDirectory) {
@@ -39,8 +43,8 @@ public class DirectoryHandleImpl implements DirectoryHandle {
             File directory = new File(currDirectory + "/" + directoryName);
             if (!directory.exists()) {
                 if (directory.mkdirs()) {
-                    Optional<Folder> parentFolder = folderService.findFolderIdByPath(currDirectory);
-                    User user=userService.findByUsername(UserSessionContext.getUserSession().getUsername() !=null ?
+                    Optional<Folder> parentFolder = folderController.findFolderIdByPath(currDirectory);
+                    User user=userController.findByUsername(UserSessionContext.getUserSession().getUsername() !=null ?
                             UserSessionContext.getUserSession().getUsername() : null);
                     if(parentFolder.isPresent()){
                         Folder folder=new Folder();
@@ -68,9 +72,9 @@ public class DirectoryHandleImpl implements DirectoryHandle {
             File directory = new File(currDirectory + "/" + directoryName);
             if (directory.exists() && directory.isDirectory()) {
                 if (Objects.requireNonNull(directory.list()).length == 0) {
-                    Optional<Folder> parentFolder = folderService.findFolderIdByPath(currDirectory);
+                    Optional<Folder> parentFolder = folderController.findFolderIdByPath(currDirectory);
                     if(parentFolder.isPresent()){
-                        Optional<Folder> folder=folderService.findFolderByFolderNameAndParentFolder(directoryName,
+                        Optional<Folder> folder=folderController.findFolderByFolderNameAndParentFolder(directoryName,
                                 parentFolder.get());
                         if(folder.isPresent()){
                             deleteDirectory(folder.get());

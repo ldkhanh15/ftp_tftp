@@ -62,4 +62,9 @@ public class ItemServiceImpl implements ItemService {
         );
         return folder.getItemId();
     }
+
+    @Override
+    public Item findByItemId(Long itemId) {
+        return itemRepository.findById(itemId).orElse(null);
+    }
 }

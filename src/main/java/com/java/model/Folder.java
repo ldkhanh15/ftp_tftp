@@ -16,10 +16,10 @@ public class Folder extends Item implements Serializable {
 
     @Column(name = "folder_name", nullable = false, length = 255)
     private String folderName;
-    @OneToMany(mappedBy = "parentFolder")
+    @OneToMany(mappedBy = "parentFolder",cascade = CascadeType.ALL)
     private Set<Folder> subFolders;
 
-    @OneToMany(mappedBy = "parentFolder")
+    @OneToMany(mappedBy = "parentFolder",cascade = CascadeType.ALL)
     private List<File> files;
 
     @ManyToOne

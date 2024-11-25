@@ -51,11 +51,15 @@ public class MainGUI extends JFrame {
         contentPanel = new JPanel(cardLayout);
 
         // Add remote tree and table to content panel
-        JPanel filePanel = ItemManagement.createFileFolderPanel();
+        //JPanel filePanel = ItemManagement.createFileFolderPanel();
         ApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
         UserManagement userManagement = context.getBean(UserManagement.class);
         JPanel userManagementPanel = userManagement.createUserManagementPanel();
+
         JPanel logPanel = Log.createLogPanel();
+
+        ItemManagement itemManagement = context.getBean(ItemManagement.class);
+        JPanel filePanel = itemManagement.createFileFolderPanel();
 
         ActiveConnection activeConnection = context.getBean(ActiveConnection.class);
         JPanel activeConnectionsPanel = activeConnection.createActiveConnectionsPanel();
