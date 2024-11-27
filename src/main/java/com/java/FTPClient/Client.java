@@ -1,13 +1,17 @@
 package com.java.FTPClient;
 
+import com.java.FTPServer.GUI.ItemManagement;
+
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.tree.TreeNode;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
+import java.util.Date;
 
 public class Client extends JFrame {
 
@@ -82,58 +86,122 @@ public class Client extends JFrame {
     }
 
     private JTree createLocalTree() {
+        // Tạo node gốc cho cây
         DefaultMutableTreeNode root = new DefaultMutableTreeNode("This Computer");
-        File[] roots = File.listRoots(); // Lấy danh sách các ổ đĩa
 
-        if (roots != null) {
-            for (File rootDrive : roots) {
-                DefaultMutableTreeNode driveNode = new DefaultMutableTreeNode(rootDrive.getPath());
-                driveNode.add(new DefaultMutableTreeNode("Loading...")); // Placeholder để tải lười
-                root.add(driveNode);
-            }
+        // Lấy danh sách tất cả các ổ đĩa
+        File[] roots = File.listRoots();
+        for (File fileRoot : roots) {
+            DefaultMutableTreeNode driveNode = new DefaultMutableTreeNode(fileRoot.getAbsolutePath());
+            root.add(driveNode);
+            populateTree(driveNode, fileRoot); // Đệ quy để thêm thư mục con
         }
 
+        // Tạo model cây
         DefaultTreeModel model = new DefaultTreeModel(root);
         JTree tree = new JTree(model);
 
-        // Lắng nghe sự kiện mở rộng để tải nội dung ổ đĩa
-        tree.addTreeWillExpandListener(new javax.swing.event.TreeWillExpandListener() {
-            @Override
-            public void treeWillExpand(javax.swing.event.TreeExpansionEvent event) throws javax.swing.tree.ExpandVetoException {
-                DefaultMutableTreeNode node = (DefaultMutableTreeNode) event.getPath().getLastPathComponent();
-                if (node.getChildCount() == 1 && node.getChildAt(0).toString().equals("Loading...")) {
-                    node.removeAllChildren(); // Xóa placeholder
-                    File file = new File(node.toString());
-                    loadFileSystemLazy(node, file);
-                    ((DefaultTreeModel) tree.getModel()).reload(node);
-                }
-            }
-
-            @Override
-            public void treeWillCollapse(javax.swing.event.TreeExpansionEvent event) throws javax.swing.tree.ExpandVetoException {
-                // Xử lý sự kiện thu gọn nếu cần
-            }
-        });
+        // Tùy chỉnh JTree
+        tree.setRowHeight(20);
+        tree.setDragEnabled(true);
 
         return tree;
     }
 
-    private void loadFileSystemLazy(DefaultMutableTreeNode parentNode, File file) {
-        File[] files = file.listFiles(File::isDirectory); // Only list directories for lazy loading
-        if (files != null) {
-            for (File f : files) {
-                DefaultMutableTreeNode childNode = new DefaultMutableTreeNode(f.getName());
-                childNode.add(new DefaultMutableTreeNode("Loading...")); // Placeholder
-                parentNode.add(childNode);
-            }
-        }
-    }
 
     private JTable createFileTable() {
         String[] columnNames = {"Name", "Size", "Type", "Last Modified"};
         DefaultTableModel model = new DefaultTableModel(columnNames, 0);
-        return new JTable(model);
+        JTable table = new JTable(model);
+        table.setRowHeight(20);
+        return table;
     }
+    private void updateFileTable(JTable table, File folder) {
+        String[] columnNames = {"Name", "Size", "Type", "Last Modified"};
+        File[] files = folder.listFiles();
+
+        Object[][] data = new Object[files != null ? files.length : 0][4];
+        if (files != null) {
+            for (int i = 0; i < files.length; i++) {
+                File f = files[i];
+                data[i][0] = f.getName();
+                data[i][1] = f.isFile() ? f.length() + " bytes" : "-";
+                data[i][2] = f.isDirectory() ? "Folder" : "File";
+                data[i][3] = new Date(f.lastModified());
+            }
+        }
+        DefaultTableModel model = new DefaultTableModel(data, columnNames);
+        table.setModel(model);
+    }
+    private void addTreeListeners() {
+        localTree.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) { // Kiểm tra double-click
+                    DefaultMutableTreeNode selectedNode =
+                            (DefaultMutableTreeNode) localTree.getLastSelectedPathComponent();
+
+                    if (selectedNode != null) {
+                        Object userObject = selectedNode.getUserObject();
+                        if (userObject instanceof TreeNodeData) { // Kiểm tra kiểu
+                           TreeNodeData nodeData = (TreeNodeData) userObject;
+                            File selectedFile = nodeData.file;
+
+                            if (selectedFile.isDirectory()) {
+                                // Cập nhật bảng hiển thị nội dung thư mục
+                                updateFileTable(localTable, selectedFile);
+
+                                // Nếu chưa tải các nút con, thêm chúng
+                                if (!nodeData.loaded) {
+                                    populateTree(selectedNode, selectedFile);
+                                    nodeData.loaded = true; // Đánh dấu đã tải
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    private void populateTree(DefaultMutableTreeNode parentNode, File folder) {
+        File[] files = folder.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                if (file.isDirectory()) {
+                   TreeNodeData data = new TreeNodeData(file, false); // Tạo TreeNodeData
+                    DefaultMutableTreeNode node = new DefaultMutableTreeNode(data);
+                    parentNode.add(node);
+                }
+            }
+        }
+    }
+    private static class TreeNodeData {
+        File file;
+        boolean loaded;
+
+        TreeNodeData(File file, boolean loaded) {
+            this.file = file;
+            this.loaded = loaded;
+        }
+
+        @Override
+        public String toString() {
+            return file.getName(); // Để hiển thị tên trong JTree
+        }
+    }
+    private File getFileFromNode(DefaultMutableTreeNode node) {
+        StringBuilder path = new StringBuilder();
+        while (node != null && node.getUserObject() != null) {
+            path.insert(0, node.getUserObject().toString() + File.separator);
+            node = (DefaultMutableTreeNode) node.getParent();
+        }
+
+        if (path.length() > 0 && path.charAt(path.length() - 1) == File.separatorChar) {
+            path.deleteCharAt(path.length() - 1);
+        }
+        return new File(path.toString());
+    }
+
     private JTable createFileTableRemote() {
         String[] columnNames = {"Name", "Size", "Type", "Last Modified"};
         DefaultTableModel model = new DefaultTableModel(columnNames, 0);
@@ -207,30 +275,6 @@ public class Client extends JFrame {
         });
 
         return table;
-    }
-    private JTree createTree(String rootName) {
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode(rootName);
-        DefaultTreeModel model = new DefaultTreeModel(root);
-        return new JTree(model);
-    }
-
-    private void addTreeListeners() {
-        localTree.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 2) {
-                    DefaultMutableTreeNode selectedNode =
-                            (DefaultMutableTreeNode) localTree.getLastSelectedPathComponent();
-                    if (selectedNode != null) {
-                        File selectedFile = getFileFromNode(selectedNode, new File(System.getProperty("user.home")));
-                        if (selectedFile != null && selectedFile.isDirectory()) {
-                            logArea.append("Local folder selected: " + selectedFile.getAbsolutePath() + "\n");
-                            updateFileTable(localTable, selectedFile);
-                        }
-                    }
-                }
-            }
-        });
     }
     private void addTreeListenersRemote() {
         remoteTree.addMouseListener(new MouseAdapter() {
@@ -337,32 +381,6 @@ public class Client extends JFrame {
         }
 
         // Cập nhật model bảng
-        DefaultTableModel model = new DefaultTableModel(data, columnNames);
-        table.setModel(model);
-    }
-    private File getFileFromNode(DefaultMutableTreeNode node, File baseDir) {
-        StringBuilder path = new StringBuilder(node.getUserObject().toString());
-        while ((node = (DefaultMutableTreeNode) node.getParent()) != null && node.getParent() != null) {
-            path.insert(0, node.getUserObject() + File.separator);
-        }
-        return new File(path.toString());
-    }
-
-
-    private void updateFileTable(JTable table, File folder) {
-        String[] columnNames = {"Name", "Size", "Type", "Last Modified"};
-        File[] files = folder.listFiles();
-        Object[][] data = {};
-        if (files != null) {
-            data = new Object[files.length][4];
-            for (int i = 0; i < files.length; i++) {
-                File f = files[i];
-                data[i][0] = f.getName();
-                data[i][1] = f.isFile() ? f.length() + " bytes" : "-";
-                data[i][2] = f.isDirectory() ? "Folder" : "File";
-                data[i][3] = new java.util.Date(f.lastModified());
-            }
-        }
         DefaultTableModel model = new DefaultTableModel(data, columnNames);
         table.setModel(model);
     }

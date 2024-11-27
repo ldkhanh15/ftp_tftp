@@ -205,21 +205,6 @@ public class ItemManagement {
         return table;
     }
 
-    private void populateTree(DefaultMutableTreeNode parentNode, File folder) {
-        File[] files = folder.listFiles();
-        if (files != null) {
-            for (File file : files) {
-                DefaultMutableTreeNode node = new DefaultMutableTreeNode(file.getName());
-                parentNode.add(node);
-
-                // If it's a directory, recursively populate its children
-                if (file.isDirectory()) {
-                    populateTree(node, file);
-                }
-            }
-        }
-    }
-
     private File getFolderFromNode(DefaultMutableTreeNode node) {
         if (node == null) {
             return null; // Node không hợp lệ
@@ -564,22 +549,60 @@ public class ItemManagement {
         remoteTree.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 2) {
+                if (e.getClickCount() == 2) { // Kiểm tra double-click
                     DefaultMutableTreeNode selectedNode =
                             (DefaultMutableTreeNode) remoteTree.getLastSelectedPathComponent();
+
                     if (selectedNode != null) {
-                        // Resolve the folder/file from the tree node
-                        File selectedFile = getFileFromNode(selectedNode);
-                        if (selectedFile != null && selectedFile.isDirectory()) {
-                            // Update the table to show the contents of the selected folder
-                            updateFileTable(remoteTable, selectedFile);
+                        Object userObject = selectedNode.getUserObject();
+                        if (userObject instanceof TreeNodeData) { // Kiểm tra kiểu
+                            TreeNodeData nodeData = (TreeNodeData) userObject;
+                            File selectedFile = nodeData.file;
+
+                            if (selectedFile.isDirectory()) {
+                                // Cập nhật bảng hiển thị nội dung thư mục
+                                updateFileTable(remoteTable, selectedFile);
+
+                                // Nếu chưa tải các nút con, thêm chúng
+                                if (!nodeData.loaded) {
+                                    populateTree(selectedNode, selectedFile);
+                                    nodeData.loaded = true; // Đánh dấu đã tải
+                                }
+                            }
                         }
                     }
                 }
             }
         });
     }
+    private void populateTree(DefaultMutableTreeNode parentNode, File folder) {
+        File[] files = folder.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                if (file.isDirectory()) {
+                    TreeNodeData data = new TreeNodeData(file, false); // Tạo TreeNodeData
+                    DefaultMutableTreeNode node = new DefaultMutableTreeNode(data);
+                    parentNode.add(node);
+                }
+            }
+        }
+    }
 
+    // Lớp giữ dữ liệu thư mục và trạng thái đã tải hay chưa
+    private static class TreeNodeData {
+        File file;
+        boolean loaded;
+
+        TreeNodeData(File file, boolean loaded) {
+            this.file = file;
+            this.loaded = loaded;
+        }
+
+        @Override
+        public String toString() {
+            return file.getName(); // Để hiển thị tên trong JTree
+        }
+    }
     private File getFileFromNode(DefaultMutableTreeNode node) {
         StringBuilder path = new StringBuilder();
         while (node != null && node.getUserObject() != null) {
