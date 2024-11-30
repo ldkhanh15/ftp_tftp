@@ -4,13 +4,16 @@ import com.java.FTPServer.enums.Command;
 import com.java.FTPServer.enums.ResponseCode;
 import com.java.FTPServer.enums.UserStatus;
 import com.java.FTPServer.handle.*;
+import com.java.FTPServer.system.Client;
 import com.java.FTPServer.system.UserSession;
-import com.java.FTPServer.system.UserSessionContext;
 import com.java.FTPServer.ulti.LogHandler;
+import com.java.FTPServer.ulti.UserSessionManager;
+import com.java.FTPServer.ulti.UserStore;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.io.PrintWriter;
 
 @Component
@@ -25,8 +28,7 @@ public class Router {
     private final DirectoryHandle directoryHandle;
     private final CommonHandle commonHandle;
 
-    public void executeCommand(String command, PrintWriter controlOutWriter, UserSession userSession) {
-
+    public void executeCommand(Client client, String command, PrintWriter controlOutWriter, UserSession userSession) {
         this.controlOutWriter = controlOutWriter;
         String[] commands;
         commands = command.split(" ");
@@ -35,16 +37,16 @@ public class Router {
             sendMsgToClient(ResponseCode.NOT_IMPLEMENTED.getResponse());
             return;
         }
-        if(UserSessionContext.getUserSession()!=null && UserSessionContext.getUserSession().getStatus()==
-                UserStatus.LOGGED_IN){
-            String log="Command: {}"+commands[0]+"\n";
-            if(commands.length > 1){
-                log+="Args: {}"+ commands[1]+"\n";
-            }
-            log+="=======end=======";
-            LogHandler.write("logs/users",UserSessionContext.getUserSession().getUsername()+".txt",
-                    log);
-        }
+       if(UserSessionManager.getUserSession() !=null && UserSessionManager.getUserSession().getStatus()==
+               UserStatus.LOGGED_IN){
+           String log="Command: {}"+commands[0]+"\n";
+           if(commands.length > 1){
+               log+="Args: {}"+ commands[1]+"\n";
+           }
+           log+="=======end=======";
+           LogHandler.write("logs/users",UserSessionManager.getUserSession().getUsername()+".txt",
+                   log);
+       }
         log.info("Command: {}", commands[0]);
         if(commands.length > 1){
             log.info("Args: {}", commands[1]);
@@ -68,6 +70,9 @@ public class Router {
                 break;
             case QUIT:
                 authHandle.handleQuit(controlOutWriter);
+                UserSessionManager.setUserSession(null);
+                UserStore.removeClient(client);
+                break;
 
             // Connection
             case PORT, EPRT:
@@ -112,16 +117,24 @@ public class Router {
 
             // Common
             case LIST:
-                commonHandle.listDetail(controlOutWriter, userSession.getCurrDirectory());
+                try {
+                    String path=userSession.getCurrDirectory();
+                    if(commands.length>1){
+                        path+="/"+commands[1];
+                    }
+                    commonHandle.listDetail(controlOutWriter,path);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
                 break;
             case NLST:
                 commonHandle.listName(controlOutWriter, userSession.getCurrDirectory());
                 break;
             case RNFR:
-                commonHandle.initiateRename(controlOutWriter,commands[1]);
+                commonHandle.initiateRename(controlOutWriter, userSession.getCurrDirectory(),commands[1]);
                 break;
             case RNTO:
-                commonHandle.finalizeRename(controlOutWriter,commands[1]);
+                commonHandle.finalizeRename(controlOutWriter, userSession.getCurrDirectory(),commands[1]);
                 break;
 
             default:

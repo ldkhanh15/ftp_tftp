@@ -11,15 +11,23 @@ import java.net.SocketException;
 public class Main {
     public static void main(String[] args) throws java.net.SocketException {
         ApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
-//        TFTPServer tftpServer = context.getBean(TFTPServer.class);
-//        try {
-//            tftpServer.start();
-//        } catch (Exception e) {
-//            System.err.println("Error: " + e.getMessage());
-//        }
+        TFTPServer tftpServer = context.getBean(TFTPServer.class);
         Server server = context.getBean(Server.class);
-        server.start();
+        new Thread(() -> {
+            try {
+                tftpServer.start();
+            } catch (Exception e) {
+                System.err.println("Error starting TFTP Server: " + e.getMessage());
+            }
+        }).start();
 
+        new Thread(() -> {
+            try {
+                server.start();
+            } catch (Exception e) {
+                System.err.println("Error starting FTP Server: " + e.getMessage());
+            }
+        }).start();
 
     }
 }

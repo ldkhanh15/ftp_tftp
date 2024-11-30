@@ -1,6 +1,7 @@
 package com.java.FTPServer.GUI;
 
 import com.java.FTPServer.system.Client;
+import com.java.FTPServer.system.Server;
 import com.java.FTPServer.ulti.LogHandler;
 import com.java.FTPServer.ulti.UserStore;
 
@@ -12,7 +13,6 @@ import java.util.List;
 
 @org.springframework.stereotype.Component
 public class ActiveConnection {
-    // Create the active connections panel
     private DefaultTableModel tableModel;
     public JPanel createActiveConnectionsPanel() {
         JPanel activeConnectionsPanel = new JPanel();
@@ -62,15 +62,17 @@ public class ActiveConnection {
 
     public void updateClientTable() {
         List<Object[]> dataList = new ArrayList<>();
-        for (Client client : UserStore.getClients()) {
-            dataList.add(new Object[]{
-                    client.getId(),
-                    client.getControlSocket().getInetAddress().getHostAddress(),
-                    client.getUserSession().getUsername(),
-                    "Connected with port " + client.getControlSocket().getPort(),
-                    "Ngắt kết nối",
-                    "Xem log"
-            });
+        for (Client client : Server.clients) {
+           if(client.getUserSession()!=null){
+               dataList.add(new Object[]{
+                       client.getId(),
+                       client.getControlSocket().getInetAddress().getHostAddress(),
+                       client.getUserSession().getUsername(),
+                       "Connected with port " + client.getControlSocket().getPort(),
+                       "Ngắt kết nối",
+                       "Xem log"
+               });
+           }
         }
 
         Object[][] data = dataList.toArray(new Object[0][]);
@@ -119,18 +121,15 @@ class ButtonEditor extends DefaultCellEditor {
         });
     }
     private void showLogViewer(Client client) {
-        // Create a new JFrame for displaying the log
         JFrame logFrame = new JFrame("User Log: " + client.getUserSession().getUsername());
         logFrame.setSize(600, 400);
         logFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
-        // Create a JTextArea inside a JScrollPane
         JTextArea logTextArea = new JTextArea();
-        logTextArea.setEditable(false); // Make sure it's not editable
+        logTextArea.setEditable(false);
         JScrollPane scrollPane = new JScrollPane(logTextArea);
         logFrame.add(scrollPane, BorderLayout.CENTER);
 
-        // Use SwingWorker to load log content asynchronously
         SwingWorker<String, Void> worker = new SwingWorker<String, Void>() {
             @Override
             protected String doInBackground() throws Exception {
@@ -150,9 +149,8 @@ class ButtonEditor extends DefaultCellEditor {
             }
         };
 
-        worker.execute(); // Start the SwingWorker
+        worker.execute();
 
-        // Show the log frame
         logFrame.setVisible(true);
     }
 
@@ -173,7 +171,7 @@ class ButtonEditor extends DefaultCellEditor {
         if (client != null) {
             try {
                 client.getControlSocket().close();
-                UserStore.getClients().remove(client); // Removes client and triggers update
+                UserStore.getClients().remove(client);
                 JOptionPane.showMessageDialog(button, "Ngắt kết nối thành công!");
             } catch (Exception e) {
                 JOptionPane.showMessageDialog(button, "Lỗi khi ngắt kết nối!");

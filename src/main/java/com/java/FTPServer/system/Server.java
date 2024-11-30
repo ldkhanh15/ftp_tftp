@@ -2,6 +2,7 @@ package com.java.FTPServer.system;
 
 import com.java.FTPServer.GUI.MainGUI;
 import com.java.FTPServer.ulti.LogHandler;
+import com.java.FTPServer.ulti.UserSessionManager;
 import com.java.FTPServer.ulti.UserStore;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
@@ -24,13 +25,14 @@ import java.util.List;
 public class Server {
     private static final int PORT = ConstFTP.PORT;
     private final ApplicationContext applicationContext;
-    private List<Client> clients = new ArrayList<>();
     private final List<Integer> dataPorts=new ArrayList<>();
+    public static List<Client> clients;
     private ServerSocket serverSocket;
     boolean serverRunning = true;
     private MainGUI mainGUI;
     public void start() {
         mainGUI=new MainGUI();
+        clients=new ArrayList<>();
         try {
             serverSocket = new ServerSocket(PORT);
         } catch (IOException e) {
@@ -43,18 +45,16 @@ public class Server {
         while (serverRunning) {
             try {
                 Socket socketClient = serverSocket.accept();
-                int dataPort = getAvailableDataPort();
-                System.out.println("So client: "+clients.size());
-                // Create a new Client instance for each incoming connection
-                Client client = applicationContext.getBean(Client.class);
-                client.init(socketClient, dataPort);
-                UserStore.addClient(client);
-                log.info("New connection received. Worker was created: {}", client.toString());
-                LogHandler.write("logs/servers","error.txt",
-                        "New connection received. Worker was created: {}"+ client.toString());
-                // Start a new thread for the client
-                Thread clientThread = new Thread(client);
-                clientThread.start();
+               if(socketClient!=null){
+                   int dataPort = getAvailableDataPort();
+                   Client client = applicationContext.getBean(Client.class);
+                   client.init(socketClient, dataPort);
+                   clients.add(client);
+                   log.info("New connection received. Worker was created: {}", client.toString());
+                   LogHandler.write("logs/servers","error.txt",
+                           "New connection received. Worker was created: {}"+ client.toString());
+                   new Thread(client).start();
+               }
             } catch (IOException e) {
                 log.error("Exception encountered on accept: {}", e.getMessage());
                 LogHandler.write("logs/servers","error.txt",

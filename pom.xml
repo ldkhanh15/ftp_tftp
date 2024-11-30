@@ -7,13 +7,13 @@
     <version>1.0</version>
     <packaging>jar</packaging>
 
-
     <properties>
         <mysql.version>8.0.33</mysql.version>
         <java.version>17</java.version>
         <spring.version>6.0.0</spring.version>
         <spring-data-jpa.version>3.1.0</spring-data-jpa.version>
-        <hibernate.version>6.2.7.Final</hibernate.version> <!-- Hibernate phiên bản mới -->
+        <hibernate.version>6.2.7.Final</hibernate.version>
+        <spring-security.version>6.0.0</spring-security.version> <!-- Thêm Spring Security version -->
     </properties>
 
     <dependencies>
@@ -45,19 +45,41 @@
             <version>${mysql.version}</version>
         </dependency>
 
+        <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>1.18.32</version> <!-- Hoặc phiên bản mới nhất -->
             <scope>provided</scope>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/org.springframework/spring-aspects -->
+
+        <!-- Spring Aspects (cho AOP) -->
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-aspects</artifactId>
             <version>6.1.13</version>
         </dependency>
 
+        <!-- Spring Security Core -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-core</artifactId>
+            <version>${spring-security.version}</version>
+        </dependency>
+
+        <!-- Spring Security Config (nếu cần cấu hình web security) -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-web</artifactId>
+            <version>${spring-security.version}</version>
+        </dependency>
+
+        <!-- Spring Security Taglibs (nếu cần sử dụng taglibs trong JSP) -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-taglibs</artifactId>
+            <version>${spring-security.version}</version>
+        </dependency>
 
     </dependencies>
 

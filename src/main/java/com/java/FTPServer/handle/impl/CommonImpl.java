@@ -10,12 +10,20 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class CommonImpl implements CommonHandle {
     private final ConnectionHandleImpl connectionHandle;
+    private Map<String, String> renameCache = new HashMap<>();
     @Override
     @FolderOwnerShip(action = AccessType.READ)
     public void listName(PrintWriter out, String currentDirectory) {
@@ -32,8 +40,8 @@ public class CommonImpl implements CommonHandle {
 
     @Override
     @FolderOwnerShip(action = AccessType.READ)
-    public void listDetail(PrintWriter out, String currentDirectory) {
-        File directory = new File(currentDirectory);
+    public void listDetail(PrintWriter out, String path){
+        File directory = new File(path);
 
         if (directory.exists() && directory.isDirectory()) {
             retrieveFileDetail(out, directory);
@@ -44,14 +52,55 @@ public class CommonImpl implements CommonHandle {
         out.println("226 Directory Send OK");
     }
 
-    @Override
-    public void initiateRename( PrintWriter out,String nameOnServer) {
 
+    @Override
+    @FolderOwnerShip(action = AccessType.WRITE)
+    public void initiateRename(PrintWriter out, String currentDirectory, String nameOnServer) {
+        File oldFile = new File(currentDirectory, nameOnServer);
+
+        if (oldFile.exists()) {
+            renameCache.put(currentDirectory, nameOnServer);
+
+            out.println("350 Requested file action pending further information.");
+            out.flush();
+            log.info("RNFR: File '{}' found. Waiting for RNTO command.", nameOnServer);
+        } else {
+            out.println("550 Requested action not taken. File not found. 1");
+            out.flush();
+            log.error("RNFR: File '{}' not found in directory '{}'.", nameOnServer, currentDirectory);
+        }
     }
 
     @Override
-    public void finalizeRename( PrintWriter out,String newName) {
+    @FolderOwnerShip(action = AccessType.WRITE)
+    public void finalizeRename(PrintWriter out, String currentDirectory, String newName) {
+        String oldName = renameCache.get(currentDirectory);
 
+        if (oldName != null) {
+            File oldFile = new File(currentDirectory, oldName);
+
+            if (oldFile.exists()) {
+                File newFile = new File(currentDirectory, newName);
+
+                if (oldFile.renameTo(newFile)) {
+                    out.println("250 Requested file action okay, completed.");
+                    out.flush();
+                    log.info("RNTO: Successfully renamed '{}' to '{}'.", oldName, newName);
+                } else {
+                    out.println("550 Requested action not taken. Failed to rename file.");
+                    out.flush();
+                    log.error("RNTO: Failed to rename '{}' to '{}'.", oldName, newName);
+                }
+            } else {
+                out.println("550 Requested action not taken. File not found. 2");
+                out.flush();
+                log.error("RNTO: File '{}' not found in directory '{}'.", oldName, currentDirectory);
+            }
+        } else {
+            out.println("503 Bad sequence of commands.");
+            out.flush();
+            log.error("RNTO: No previous RNFR command found for directory '{}'.", currentDirectory);
+        }
     }
 
     private void retrieveFileName(PrintWriter out, File directory) {
@@ -101,12 +150,22 @@ public class CommonImpl implements CommonHandle {
             System.err.println(e.getMessage());
         }
 
-        String s;
+
 
         File[] files = directory.listFiles();
         if (files != null) {
             for (File file : files) {
-                rout.println(file.getName() + " ...more...");
+                String s="";
+                if(file.isDirectory()){
+                    s+="d\t";
+                    s+="-\t";
+                }else{
+                    s+="-\t";
+                    s+=file.length()+"\t";
+                }
+                s+=new Date(file.lastModified())+"\t";
+                s+=file.getName()+"\n";
+                rout.println(s);
             }
         } else {
             out.println("No files found in the directory.");

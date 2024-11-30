@@ -2,7 +2,7 @@ package com.java.configuration;
 
 import com.java.FTPServer.anotation.FolderOwnerShip;
 import com.java.FTPServer.system.UserSession;
-import com.java.FTPServer.system.UserSessionContext;
+import com.java.FTPServer.ulti.UserSessionManager;
 import com.java.dto.UserDTO;
 import com.java.enums.AccessType;
 import com.java.model.User;
@@ -30,11 +30,12 @@ public class Ownership {
 
     @Before("@annotation(folderOwnerShip) && args(out, ..)")
     public void checkFolderOwnership(FolderOwnerShip folderOwnerShip, PrintWriter out) throws Exception {
-        UserSession userSession =  UserSessionContext.getUserSession();
+        UserSession userSession=UserSessionManager.getUserSession();
         if (userSession == null) {
             throw new Exception("User session is not set.");
         }
         String username = userSession.getUsername();
+        System.out.println("username: "+username);
         String currentDirectory=userSession.getCurrDirectory();
         if (username == null) {
             throw new Exception("User is not authenticated.");

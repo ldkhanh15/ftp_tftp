@@ -22,13 +22,29 @@ public class UserStore {
         support.removePropertyChangeListener(listener);
     }
 
-    public static void addClient(Client client) {
-        clients.add(client);
-        support.firePropertyChange("clients", null, clients);
+    public static synchronized void addClient(Client client) {
+        boolean isExist = false;
+        for (Client client1 : clients) {
+            if (client1.equals(client)) {
+                isExist = true;
+                break;
+            }
+        }
+        if (!isExist) {
+            clients.add(client);  // Thêm client vào UserStore nếu chưa có
+            support.firePropertyChange("clients", null, clients);  // Cập nhật thông tin
+        }
+        System.out.println("in store: "+clients.size());
     }
 
-    public static void removeClient(Client client) {
-        clients.remove(client);
-        support.firePropertyChange("clients", null, clients);
+
+    public static synchronized void removeClient(Client client) {
+        if (clients.contains(client)) {
+            clients.remove(client);
+            support.firePropertyChange("clients", null, clients);
+        }
+        System.out.println("Client removed. Current clients: " + clients.stream()
+                .map(c -> c.getUserSession().getDataPort() + " - " + c.getUserSession().getUsername())
+                .toList());
     }
 }

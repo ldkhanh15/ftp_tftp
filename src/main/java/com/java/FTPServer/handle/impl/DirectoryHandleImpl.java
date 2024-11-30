@@ -5,7 +5,7 @@ import com.java.FTPServer.enums.ResponseCode;
 import com.java.FTPServer.handle.DirectoryHandle;
 import com.java.FTPServer.system.ConstFTP;
 import com.java.FTPServer.system.UserSession;
-import com.java.FTPServer.system.UserSessionContext;
+import com.java.FTPServer.ulti.UserSessionManager;
 import com.java.controller.FolderController;
 import com.java.controller.UserController;
 import com.java.enums.AccessType;
@@ -44,8 +44,8 @@ public class DirectoryHandleImpl implements DirectoryHandle {
             if (!directory.exists()) {
                 if (directory.mkdirs()) {
                     Optional<Folder> parentFolder = folderController.findFolderIdByPath(currDirectory);
-                    User user=userController.findByUsername(UserSessionContext.getUserSession().getUsername() !=null ?
-                            UserSessionContext.getUserSession().getUsername() : null);
+                    User user=userController.findByUsername(UserSessionManager.getUserSession().getUsername() !=null ?
+                            UserSessionManager.getUserSession().getUsername() : null);
                     if(parentFolder.isPresent()){
                         Folder folder=new Folder();
                         folder.setParentFolder(parentFolder.get());
