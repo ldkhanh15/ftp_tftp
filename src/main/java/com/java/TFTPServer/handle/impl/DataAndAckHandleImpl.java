@@ -36,7 +36,7 @@ public class DataAndAckHandleImpl implements DataAndAckHandle {
             try {
                 System.out.println("sending ack for block: " + block);
                 sendSocket.send(sendAck);
-                sendSocket.setSoTimeout(((int) Math.pow(2, retryCount++)) * 1000);
+                sendSocket.setSoTimeout(((int) Math.pow(2, retryCount++)) * 2000);
                 sendSocket.receive(receiver);
 
                 short blockNum = getData(receiver);
@@ -82,7 +82,8 @@ public class DataAndAckHandleImpl implements DataAndAckHandle {
             try {
                 sendSocket.send(sender);
                 System.out.println("Sent.");
-                sendSocket.setSoTimeout(((int) Math.pow(2, retryCount++)) * 1000);
+                sendSocket.setSoTimeout(((int) Math.pow(2, retryCount++)) * 50000);
+                System.out.println("Thoi gian: "+((int) Math.pow(2, retryCount++)) * 50000);
                 sendSocket.receive(receiver);
 
                 short ack = getAck(receiver);

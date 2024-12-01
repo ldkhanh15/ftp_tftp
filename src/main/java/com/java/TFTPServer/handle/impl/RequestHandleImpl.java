@@ -72,12 +72,12 @@ public class RequestHandleImpl implements RequestHandle {
                     return opcode;
                 } else {
                     System.err.println("No mode specified.");
-                    System.exit(1);
+                    //System.exit(1);
                 }
             }
         }
         System.err.println("Did not find delimiter.");
-        System.exit(1);
+        //System.exit(1);
         return 0;
     }
 
@@ -153,5 +153,6 @@ public class RequestHandleImpl implements RequestHandle {
         } else {
             System.err.println("Unknown request type.");
         }
+        System.out.println("file: "+file.getName());
     }
 }

@@ -5,6 +5,8 @@ import com.java.FTPServer.system.UserSession;
 import com.java.FTPServer.ulti.UserSessionManager;
 import com.java.dto.UserDTO;
 import com.java.enums.AccessType;
+import com.java.enums.Role;
+import com.java.exception.PermissionException;
 import com.java.model.User;
 import com.java.service.FolderService;
 import com.java.service.UserService;
@@ -47,15 +49,17 @@ public class Ownership {
         }
 
         AccessType accessType = folderOwnerShip.action();
-
-        if (ROLE_ADMIN.equals(user.getRole())) {
+        System.out.println(ROLE_ADMIN);
+        System.out.println(user.getRole());
+        if (Role.ADMIN.equals(user.getRole())) {
             System.out.println("User is an admin. Access granted.");
             return;
         }
 
         if (!folderService.hasAccessToFolder(currentDirectory, user, accessType)) {
             System.out.println("Access denied.");
-            return;
+            out.println("550 Permission denied");
+            throw new PermissionException("User does not permission");
         }
 
         System.out.println("Access granted.");

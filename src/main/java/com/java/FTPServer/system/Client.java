@@ -5,6 +5,7 @@ import com.java.FTPServer.enums.ResponseCode;
 import com.java.FTPServer.ulti.LogHandler;
 import com.java.FTPServer.ulti.UserSessionManager;
 import com.java.FTPServer.ulti.UserStore;
+import com.java.exception.PermissionException;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -52,8 +53,14 @@ public class Client extends Thread {
                 controlOutWriter = new PrintWriter(controlSocket.getOutputStream(), true);
                 controlOutWriter.println(ResponseCode.SERVICE_READY.getResponse("Welcome to FTP server"));
                 while (true) {
-                    router.executeCommand(this,controlIn.readLine(),controlOutWriter,
-                            UserSessionManager.getUserSession());
+                   try{
+                       router.executeCommand(this,controlIn.readLine(),controlOutWriter,
+                               UserSessionManager.getUserSession());
+                   }catch (PermissionException e){
+                       LogHandler.write("logs/servers","error.txt",e.getMessage(),e);
+                       System.out.println("error permission");
+
+                   }
                 }
             } catch (Exception e) {
                 LogHandler.write("logs/servers","error.txt",
@@ -67,6 +74,7 @@ public class Client extends Thread {
                         controlOutWriter.close();
                     }
                     controlSocket.close();
+                    UserStore.removeClient(this);
                     LogHandler.write("logs/servers","error.txt",
                             "Sockets closed and worker stopped");
                     printOutput("Sockets closed and worker stopped");
