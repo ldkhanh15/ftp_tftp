@@ -58,7 +58,7 @@ public class RequestHandleImpl implements RequestHandle {
 
         if (delimiter == -1) {
             System.err.println("Corrupt request packet. Shutting down I guess.");
-            System.exit(1);
+//            System.exit(1);
         }
 
         String fileName = new String(buf, 2, delimiter - 2);
@@ -103,7 +103,7 @@ public class RequestHandleImpl implements RequestHandle {
                         errorHandle.sendError(sendSocket, ServerResponseErrorCode.ERR_LOST.getCode(), ServerResponseErrorCode.ERR_LOST.getDescription());
                         return;
                     }
-                    if (length < 512) {
+                    if (length < ConstTFTP.BUFFER_SIZE - 4) {
                         in.close();
                         break;
                     }
@@ -138,7 +138,7 @@ public class RequestHandleImpl implements RequestHandle {
                         byte[] data = dataPacket.getData();
                         out.write(data, 4, dataPacket.getLength() - 4);
                         System.out.println(dataPacket.getLength());
-                        if (dataPacket.getLength() - 4 < 512) {
+                        if (dataPacket.getLength() - 4 < ConstTFTP.BUFFER_SIZE - 4) {
                             sendSocket.send(dataAndAckHandle.ackPacket(blockNum));
                             System.out.println("All done writing file.");
                             out.close();
