@@ -115,6 +115,7 @@ public class RequestHandleImpl implements RequestHandle {
                     }
                     if (length < ConstTFTP.BUFFER_SIZE - 4) {
                         in.close();
+                        System.out.println("SEND ALL SUCCESSFULLY");
                         break;
                     }
                 }

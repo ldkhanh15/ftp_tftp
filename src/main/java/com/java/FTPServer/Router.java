@@ -37,6 +37,13 @@ public class Router {
             sendMsgToClient(ResponseCode.NOT_IMPLEMENTED.getResponse());
             return;
         }
+        StringBuilder path = new StringBuilder();
+        for(int i=1;i<commands.length;i++){
+            if (i == command.length() - 1)
+                path.append(commands[i]);
+            else
+                path.append(commands[i]).append(" ");
+        }
        if(UserSessionManager.getUserSession() !=null && UserSessionManager.getUserSession().getStatus()==
                UserStatus.LOGGED_IN){
            String log="Command: {}"+commands[0]+"\n";
@@ -76,7 +83,7 @@ public class Router {
 
             // Connection
             case PORT, EPRT:
-                connectionHandle.processActiveMode(commands[1], controlOutWriter);
+                connectionHandle.processActiveMode(path.toString(), controlOutWriter);
                 break;
             case EPSV:
                 connectionHandle.processPassiveMode(controlOutWriter, userSession.getDataPort(), true);
@@ -89,40 +96,40 @@ public class Router {
 
             // File
             case STOR:
-                fileHandle.uploadFile( controlOutWriter,commands[1], userSession);
+                fileHandle.uploadFile( controlOutWriter,path.toString(), userSession);
                 break;
             case RETR:
-                fileHandle.downloadFile(controlOutWriter,commands[1],  userSession);
+                fileHandle.downloadFile(controlOutWriter,path.toString(),  userSession);
                 break;
             case APPE:
-                fileHandle.appendToFile( controlOutWriter, commands[1],userSession);
+                fileHandle.appendToFile( controlOutWriter, path.toString(),userSession);
                 break;
             case DELE:
-                fileHandle.deleteFile( controlOutWriter, commands[1],userSession);
+                fileHandle.deleteFile( controlOutWriter, path.toString(),userSession);
                 break;
 
             // Directory
             case CWD:
-                directoryHandle.changeWorkingDirectory(controlOutWriter,commands[1], userSession);
+                directoryHandle.changeWorkingDirectory(controlOutWriter,path.toString(), userSession);
                 break;
             case XPWD:
                 directoryHandle.printWorkingDirectory(controlOutWriter, userSession.getCurrDirectory());
                 break;
             case XMKD:
-                directoryHandle.createDirectory( controlOutWriter,commands[1], userSession.getCurrDirectory());
+                directoryHandle.createDirectory( controlOutWriter,path.toString(), userSession.getCurrDirectory());
                 break;
             case XRMD:
-                directoryHandle.removeDirectory( controlOutWriter,commands[1], userSession.getCurrDirectory());
+                directoryHandle.removeDirectory( controlOutWriter,path.toString(), userSession.getCurrDirectory());
                 break;
 
             // Common
             case LIST:
                 try {
-                    String path=userSession.getCurrDirectory();
+                    String pathUp = userSession.getCurrDirectory();
                     if(commands.length>1){
-                        path+="/"+commands[1];
+                        pathUp += "/"+path;
                     }
-                    commonHandle.listDetail(controlOutWriter,path);
+                    commonHandle.listDetail(controlOutWriter,pathUp);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -131,10 +138,10 @@ public class Router {
                 commonHandle.listName(controlOutWriter, userSession.getCurrDirectory());
                 break;
             case RNFR:
-                commonHandle.initiateRename(controlOutWriter, userSession.getCurrDirectory(),commands[1]);
+                commonHandle.initiateRename(controlOutWriter, userSession.getCurrDirectory(),path.toString());
                 break;
             case RNTO:
-                commonHandle.finalizeRename(controlOutWriter, userSession.getCurrDirectory(),commands[1]);
+                commonHandle.finalizeRename(controlOutWriter, userSession.getCurrDirectory(),path.toString());
                 break;
 
             default:
