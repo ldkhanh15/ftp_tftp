@@ -37,5 +37,16 @@ public interface FolderRepository extends JpaRepository<Folder, Long> {
             @Param("userId") Long userId
     );
 
+    @Query("""
+    SELECT f, ai.accessType FROM Folder f
+    LEFT JOIN AccessItem ai ON ai.item = f AND ai.user.id = :userId
+    WHERE f.parentFolder.itemId = :folderId
+    AND (f.isPublic = true OR ai IS NOT NULL OR f.owner.id = :userId)
+""")
+    List<Object[]> findFoldersInFolderByUserAccessDTO(
+            @Param("folderId") Long folderId,
+            @Param("userId") Long userId
+    );
+
 
 }

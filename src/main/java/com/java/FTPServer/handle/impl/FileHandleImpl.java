@@ -4,6 +4,7 @@ import com.java.FTPServer.enums.ResponseCode;
 import com.java.FTPServer.enums.TransferType;
 import com.java.FTPServer.handle.FileHandle;
 import com.java.FTPServer.system.UserSession;
+import com.java.FTPServer.ulti.UserSessionManager;
 import com.java.controller.FileController;
 import com.java.controller.FolderController;
 import com.java.model.Folder;
@@ -26,7 +27,7 @@ public class FileHandleImpl implements FileHandle {
     private UserSession userSession;
     @Override
     public void uploadFile(PrintWriter out,String fileName,  UserSession userSession) {
-        this.userSession=userSession;
+        this.userSession= UserSessionManager.getUserSession();
         File f = null;
         if (fileName == null) {
             out.println(ResponseCode.NOT_SUPPORTED.getResponse("No filename given"));
