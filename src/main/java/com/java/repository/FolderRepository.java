@@ -27,12 +27,12 @@ public interface FolderRepository extends JpaRepository<Folder, Long> {
             @Param("folderName") String folderName);
 
     @Query("""
-    SELECT i FROM Item i
-    LEFT JOIN AccessItem ai ON ai.item = i AND ai.user.id = :userId
-    WHERE i.parentFolder.itemId = :folderId
-    AND (i.isPublic = true OR ai IS NOT NULL)
+    SELECT f FROM Folder f
+    LEFT JOIN AccessItem ai ON ai.item = f AND ai.user.id = :userId
+    WHERE f.parentFolder.itemId = :folderId
+    AND (f.isPublic = true OR ai IS NOT NULL OR f.owner.id = :userId)
 """)
-    List<Item> findItemsInFolderByUserAccess(
+    List<Folder> findFoldersInFolderByUserAccess(
             @Param("folderId") Long folderId,
             @Param("userId") Long userId
     );

@@ -3,13 +3,17 @@ package com.java.service.impl;
 import com.java.dto.FolderDTO;
 import com.java.dto.UserDTO;
 import com.java.enums.AccessType;
+import com.java.model.File;
 import com.java.model.Folder;
+import com.java.model.Item;
 import com.java.repository.AccessRepository;
+import com.java.repository.FileRepository;
 import com.java.repository.FolderRepository;
 import com.java.service.FolderService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,10 +23,12 @@ import static com.java.enums.AccessType.WRITE;
 public class FolderServiceImpl implements FolderService {
     private final FolderRepository folderRepository;
     private final AccessRepository accessItemRepository;
+    private final FileRepository fileRepository;
 
-    public FolderServiceImpl(FolderRepository folderRepository, AccessRepository accessItemRepository) {
+    public FolderServiceImpl(FolderRepository folderRepository, AccessRepository accessItemRepository, FileRepository fileRepository) {
         this.folderRepository = folderRepository;
         this.accessItemRepository = accessItemRepository;
+        this.fileRepository = fileRepository;
     }
 
     @Override
@@ -146,19 +152,16 @@ public class FolderServiceImpl implements FolderService {
         return accessItemRepository.findAccessItemsByFolderIdAndUserId(folder.getItemId(), user.getId()).getAccessType().equals(accessType);
     }
 
-    private boolean checkAccessType(AccessType granted, AccessType required) {
-        if (required == AccessType.READ) {
-            return granted == AccessType.READ || granted == WRITE || granted == AccessType.ALL;
-        } else if (required == WRITE) {
-            return granted == WRITE || granted == AccessType.ALL;
-        } else if (required == AccessType.ALL) {
-            return granted == AccessType.ALL;
-        }
-        return false;
-    }
-
     private boolean isOwner(UserDTO user, FolderDTO folder) {
         return user.getId().equals(folder.getOwnerId());
     }
 
+    public List<Item> findItemByAccess(Long folderId,Long userId){
+            List<Folder> folders = folderRepository.findFoldersInFolderByUserAccess(folderId, userId);
+            List<File> files = fileRepository.findFilesInFolderByUserAccess(folderId, userId);
+            List<Item> items = new ArrayList<>();
+            items.addAll(folders);
+            items.addAll(files);
+            return items;
+    }
 }

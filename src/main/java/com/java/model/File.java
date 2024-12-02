@@ -23,5 +23,14 @@ public class File extends Item implements Serializable {
 
     @Column(name = "file_type", length = 255)
     private String fileType;
+    @ManyToOne
+    @JoinColumn(name = "parent_id")
+    private Folder parentFolder;
 
+    public File(String name, String path, long length, String fileType) {
+        this.fileName=name;
+        this.filePath=path;
+        this.fileSize=length;
+        this.fileType=fileType;
+    }
 }

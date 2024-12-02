@@ -3,6 +3,7 @@ package com.java.service;
 import com.java.dto.UserDTO;
 import com.java.enums.AccessType;
 import com.java.model.Folder;
+import com.java.model.Item;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -17,4 +18,6 @@ public interface FolderService {
    Optional<Folder> findFolderByFolderNameAndParentFolder(String folderName, Folder parentFolder);
    @Transactional
    boolean hasAccessToFolder(String fullPath, UserDTO user, AccessType accessType);
+
+    List<Item> findItemByAccess(Long folderId, Long userId);
 }
