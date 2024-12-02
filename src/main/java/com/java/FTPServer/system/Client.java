@@ -5,12 +5,16 @@ import com.java.FTPServer.enums.ResponseCode;
 import com.java.FTPServer.ulti.LogHandler;
 import com.java.FTPServer.ulti.UserSessionManager;
 import com.java.FTPServer.ulti.UserStore;
+import com.java.TFTPServer.system.TFTPServer;
+import com.java.configuration.AppConfig;
 import com.java.exception.PermissionException;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -36,15 +40,25 @@ public class Client extends Thread {
     public void init(Socket clientSocket, int dataPort) {
         this.dataPort=dataPort;
         this.controlSocket = clientSocket;
-
     }
 
     public void run() {
+
         UserSession userSession = new UserSession();
         userSession.setDataPort(dataPort);
         this.userSession = userSession;
         UserStore.addClient(this);
         UserSessionManager.setUserSession(userSession);
+        ApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
+        TFTPServer tftpServer = context.getBean(TFTPServer.class);
+        tftpServer.setUserSession(userSession);
+        new Thread(() -> {
+            try {
+                tftpServer.start();
+            } catch (Exception e) {
+                System.err.println("Error starting TFTP Server: " + e.getMessage());
+            }
+        }).start();
         while (!controlSocket.isClosed()) {
             PrintWriter controlOutWriter = null;
             BufferedReader controlIn = null;

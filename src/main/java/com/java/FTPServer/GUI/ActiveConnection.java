@@ -1,5 +1,6 @@
 package com.java.FTPServer.GUI;
 
+import com.java.FTPServer.enums.ResponseCode;
 import com.java.FTPServer.system.Client;
 import com.java.FTPServer.system.Server;
 import com.java.FTPServer.ulti.LogHandler;
@@ -8,6 +9,7 @@ import com.java.FTPServer.ulti.UserStore;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -170,6 +172,8 @@ class ButtonEditor extends DefaultCellEditor {
     private void disconnectClient(Client client) {
         if (client != null) {
             try {
+                PrintWriter out= new PrintWriter(client.getControlSocket().getOutputStream());
+                out.println(ResponseCode.SERVICE_CLOSING.getResponse());
                 client.getControlSocket().close();
                 UserStore.getClients().remove(client);
                 JOptionPane.showMessageDialog(button, "Ngắt kết nối thành công!");

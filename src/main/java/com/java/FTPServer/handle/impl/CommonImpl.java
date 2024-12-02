@@ -4,7 +4,12 @@ import com.java.FTPServer.anotation.FolderOwnerShip;
 import com.java.FTPServer.anotation.ItemOwnerShip;
 import com.java.FTPServer.enums.ResponseCode;
 import com.java.FTPServer.handle.CommonHandle;
+import com.java.FTPServer.ulti.UserSessionManager;
+import com.java.controller.UserController;
+import com.java.dto.UserDTO;
 import com.java.enums.AccessType;
+import com.java.model.User;
+import com.java.service.FolderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -24,6 +29,8 @@ import java.util.Map;
 public class CommonImpl implements CommonHandle {
     private final ConnectionHandleImpl connectionHandle;
     private Map<String, String> renameCache = new HashMap<>();
+    private final UserController userController;
+    private final FolderService folderService;
     @Override
     @FolderOwnerShip(action = AccessType.READ)
     public void listName(PrintWriter out, String currentDirectory) {
@@ -120,11 +127,14 @@ public class CommonImpl implements CommonHandle {
         }
 
         String s;
+        UserDTO user=userController.findByUserNameDTO(UserSessionManager.getUserSession().getUsername());
 
         File[] files = directory.listFiles();
         if (files != null) {
             for (File file : files) {
-                rout.println(file.getName());
+                if(!folderService.hasAccessToFolder(file.getAbsolutePath(), user, AccessType.READ)){
+                    rout.println(file.getName());
+                }
             }
         } else {
             out.println("No files found in the directory.");

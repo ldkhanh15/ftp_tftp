@@ -23,7 +23,5 @@ public class File extends Item implements Serializable {
 
     @Column(name = "file_type", length = 255)
     private String fileType;
-    @ManyToOne
-    @JoinColumn(name = "parent_id")
-    private Folder parentFolder;
+
 }
