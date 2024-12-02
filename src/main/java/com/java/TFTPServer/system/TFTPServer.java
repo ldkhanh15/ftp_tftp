@@ -4,6 +4,7 @@ import java.io.*;
 import java.net.*;
 import java.nio.ByteBuffer;
 
+import com.java.FTPServer.system.UserSession;
 import com.java.TFTPServer.custom.NetAsciiInputStream;
 import com.java.TFTPServer.custom.NetAsciiOutputStream;
 import com.java.TFTPServer.enums.ClientResponseErrorCode;
@@ -12,12 +13,14 @@ import com.java.TFTPServer.enums.ServerResponseErrorCode;
 import com.java.TFTPServer.handle.DataAndAckHandle;
 import com.java.TFTPServer.handle.ErrorHandle;
 import com.java.TFTPServer.handle.RequestHandle;
+import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class TFTPServer {
-
+    @Setter
+    private UserSession userSession;
     public static String mode;
     private final RequestHandle requestHandle;
 
@@ -39,7 +42,6 @@ public class TFTPServer {
 
     public void start() throws SocketException {
         byte[] buf = new byte[ConstTFTP.BUFFER_SIZE];
-
         DatagramSocket socket = new DatagramSocket(null);
 
         SocketAddress localBindPoint = new InetSocketAddress(ConstTFTP.PORT_TFTP);
@@ -66,10 +68,8 @@ public class TFTPServer {
                                 " from " + clientAddress.getHostName() + " using port " + clientAddress.getPort());
 
                         if (reqtype == Opcode.OP_RRQ.getCode()) {
-                            requestedFile.insert(0, ConstTFTP.READ_ROOT);
                             requestHandle.HandleRQ(sendSocket, requestedFile.toString(), Opcode.OP_RRQ.getCode());
                         } else {
-                            requestedFile.insert(0, ConstTFTP.WRITE_ROOT);
                             requestHandle.HandleRQ(sendSocket, requestedFile.toString(), Opcode.OP_WRQ.getCode());
                         }
                         sendSocket.close();

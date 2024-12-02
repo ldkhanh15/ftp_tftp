@@ -1,5 +1,6 @@
 package com.java.TFTPServer.handle.impl;
 
+import com.java.FTPServer.ulti.UserSessionManager;
 import com.java.TFTPServer.custom.NetAsciiInputStream;
 import com.java.TFTPServer.custom.NetAsciiOutputStream;
 import com.java.TFTPServer.enums.Opcode;
@@ -8,6 +9,10 @@ import com.java.TFTPServer.handle.DataAndAckHandle;
 import com.java.TFTPServer.handle.ErrorHandle;
 import com.java.TFTPServer.handle.RequestHandle;
 import com.java.TFTPServer.system.ConstTFTP;
+import com.java.controller.FileController;
+import com.java.controller.FolderController;
+import com.java.model.Folder;
+import com.java.service.FileService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -16,17 +21,22 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.util.Optional;
 
 
 @Component
 public class RequestHandleImpl implements RequestHandle {
     private final DataAndAckHandle dataAndAckHandle;
     private final ErrorHandle errorHandle;
+    private final FileController fileController;
+    private final FolderController folderController;
 
     @Autowired
-    public RequestHandleImpl(DataAndAckHandle dataAndAckHandle, ErrorHandle errorHandle) {
+    public RequestHandleImpl(DataAndAckHandle dataAndAckHandle, ErrorHandle errorHandle, FileController fileController, FolderController folderController) {
         this.dataAndAckHandle = dataAndAckHandle;
         this.errorHandle = errorHandle;
+        this.fileController = fileController;
+        this.folderController = folderController;
     }
     public static String mode;
     @Override
@@ -83,7 +93,7 @@ public class RequestHandleImpl implements RequestHandle {
 
     @Override
     public void HandleRQ(DatagramSocket sendSocket, String fileName, int reqType) {
-        File file = new File(fileName);
+        File file = new File(ConstTFTP.READ_ROOT+"/"+fileName);
         byte[] buf = new byte[ConstTFTP.BUFFER_SIZE - 4];
 
         if (reqType == Opcode.OP_RRQ.getCode()) {
@@ -108,6 +118,7 @@ public class RequestHandleImpl implements RequestHandle {
                         break;
                     }
                 }
+                handleSave(file);
             } catch (FileNotFoundException e) {
                 System.err.println("File not found. Sending error packet.");
                 errorHandle.sendError(sendSocket, ServerResponseErrorCode.ERR_FNF.getCode(), ServerResponseErrorCode.ERR_FNF.getDescription());
@@ -146,6 +157,7 @@ public class RequestHandleImpl implements RequestHandle {
                         }
                     }
                 }
+                handleSave(file);
             } catch (IOException e) {
                 System.err.println("Error writing file.");
                 errorHandle.sendError(sendSocket, ServerResponseErrorCode.ERR_ACCESS.getCode(), ServerResponseErrorCode.ERR_ACCESS.getDescription());
@@ -153,6 +165,29 @@ public class RequestHandleImpl implements RequestHandle {
         } else {
             System.err.println("Unknown request type.");
         }
-        System.out.println("file: "+file.getName());
+    }
+    private void handleSave(File file){
+        Optional<Folder> folder=folderController.findFolderIdByPath(ConstTFTP.READ_ROOT);
+        if(folder.isPresent()){
+            com.java.model.File fileDB=new com.java.model.File(file.getName(),file.getPath(),file.length(),
+                    getFileType(file.getName()));
+            fileDB.setParentFolder(folder.get());
+            fileController.save(fileDB);
+        }else{
+              Folder parent=folderController.save("ftp_root","public");
+            com.java.model.File fileDB=new com.java.model.File(file.getName(),file.getPath(),file.length(),
+                    getFileType(file.getName()));
+            fileDB.setParentFolder(parent);
+            fileDB.setIsPublic(true);
+            fileController.save(fileDB);
+        }
+    }
+    private String getFileType(String fileName) {
+        int lastIndexOfDot = fileName.lastIndexOf('.');
+        if (lastIndexOfDot > 0 && lastIndexOfDot < fileName.length() - 1) {
+            return fileName.substring(lastIndexOfDot + 1).toLowerCase();
+        }
+        return "unknown";
     }
 }
+

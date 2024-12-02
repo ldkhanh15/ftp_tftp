@@ -4,12 +4,15 @@ import com.java.FTPServer.GUI.MainGUI;
 import com.java.FTPServer.ulti.LogHandler;
 import com.java.FTPServer.ulti.UserSessionManager;
 import com.java.FTPServer.ulti.UserStore;
+import com.java.TFTPServer.system.TFTPServer;
+import com.java.configuration.AppConfig;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
@@ -31,6 +34,7 @@ public class Server {
     boolean serverRunning = true;
     private MainGUI mainGUI;
     public void start() {
+
         mainGUI=new MainGUI();
         clients=new ArrayList<>();
         try {

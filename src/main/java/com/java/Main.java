@@ -20,7 +20,6 @@ public class Main {
                 System.err.println("Error starting TFTP Server: " + e.getMessage());
             }
         }).start();
-
         new Thread(() -> {
             try {
                 server.start();

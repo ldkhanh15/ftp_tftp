@@ -45,10 +45,14 @@ public class Item implements Serializable {
 
     @OneToMany(mappedBy = "item")
     private Set<AccessItem> accessItems;
-
+    @ManyToOne
+    @JoinColumn(name = "parent_id")
+    private Folder parentFolder;
     @PrePersist
     public void handleBeforeCreate() {
-        this.createdBy = UserSessionManager.getUserSession().getUsername() != null ? UserSessionManager.getUserSession().getUsername() : "";
+        if(UserSessionManager.getUserSession()!=null){
+            this.createdBy = UserSessionManager.getUserSession().getUsername() != null ? UserSessionManager.getUserSession().getUsername() : "";
+        }
         ZoneId zoneId = ZoneId.of("Asia/Bangkok");
         ZonedDateTime updatedAtWithZone = Instant.now().atZone(zoneId);
         this.createdAt = updatedAtWithZone.toLocalDateTime();
@@ -56,7 +60,10 @@ public class Item implements Serializable {
 
     @PreUpdate
     public void handleBeforeUpdate() {
-        this.updatedBy = UserSessionManager.getUserSession().getUsername() != null ? UserSessionManager.getUserSession().getUsername() : "";
+        if(UserSessionManager.getUserSession()!=null){
+            this.updatedBy = UserSessionManager.getUserSession().getUsername() != null ? UserSessionManager.getUserSession().getUsername() : "";
+        }
+
         ZoneId zoneId = ZoneId.of("Asia/Bangkok"); // GMT+7
         ZonedDateTime updatedAtWithZone = Instant.now().atZone(zoneId);
         this.updatedAt = updatedAtWithZone.toLocalDateTime();

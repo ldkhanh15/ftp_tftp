@@ -26,17 +26,17 @@ public class MainGUI extends JFrame {
             e.printStackTrace();
         }
 
-        // Create connection panel
-        JPanel connectionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        connectionPanel.add(new JLabel("Host:"));
-        connectionPanel.add(new JTextField(10));
-        connectionPanel.add(new JLabel("Username:"));
-        connectionPanel.add(new JTextField(10));
-        connectionPanel.add(new JLabel("Password:"));
-        connectionPanel.add(new JPasswordField(10));
-        connectionPanel.add(new JLabel("Port:"));
-        connectionPanel.add(new JTextField(5));
-        connectionPanel.add(new JButton("Quickconnect"));
+//        // Create connection panel
+//        JPanel connectionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+//        connectionPanel.add(new JLabel("Host:"));
+//        connectionPanel.add(new JTextField(10));
+//        connectionPanel.add(new JLabel("Username:"));
+//        connectionPanel.add(new JTextField(10));
+//        connectionPanel.add(new JLabel("Password:"));
+//        connectionPanel.add(new JPasswordField(10));
+//        connectionPanel.add(new JLabel("Port:"));
+//        connectionPanel.add(new JTextField(5));
+//        connectionPanel.add(new JButton("Quickconnect"));
 
         // Create log area
         logArea = new JTextArea(5, 20);
@@ -76,7 +76,7 @@ public class MainGUI extends JFrame {
 
         // Main layout
         getContentPane().setLayout(new BorderLayout());
-        getContentPane().add(connectionPanel, BorderLayout.NORTH);
+       // getContentPane().add(connectionPanel, BorderLayout.NORTH);
         getContentPane().add(splitPane, BorderLayout.CENTER);
 
         setVisible(true);
