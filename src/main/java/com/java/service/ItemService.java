@@ -10,4 +10,7 @@ public interface ItemService{
     long getFolderRootId();
 
     Item findByItemId(Long itemId);
+
+    Item getById(Long itemId);
+    Item save(Item item);
 }

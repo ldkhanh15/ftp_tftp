@@ -25,15 +25,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<Object[]> getAllUser() {
-        return userRepository.findAll().stream().map(
-                u -> new Object[]{
-                        u.getId(),
-                        u.getUsername(),
-                        u.getPassword(),
-                        u.getRole()
-                }
-        ).toList();
+    public List<User> getAllUser() {
+        return  userRepository.findAll();
     }
 
     @Override

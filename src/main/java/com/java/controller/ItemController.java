@@ -1,5 +1,6 @@
 package com.java.controller;
 
+import com.java.model.Item;
 import com.java.service.ItemService;
 import com.java.dto.NodeDTO;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,15 @@ public class ItemController {
             System.out.println(e.getMessage());
             return -1;
         }
+    }
+    public Item getById(Long itemId){
+        return itemService.getById(itemId);
+    }
+
+    public Item changePublic(Long itemId, boolean isPublic) {
+        Item item = itemService.findByItemId(itemId);
+        item.setIsPublic(isPublic);
+        return itemService.save(item);
     }
 }
 

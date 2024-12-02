@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface UserService {
     boolean login(String username, String password);
-    List<Object[]> getAllUser();
+    List<User> getAllUser();
     List<User> findAll();
     User findByUsername(String username);
     UserDTO findByUserNameDTO(String username);

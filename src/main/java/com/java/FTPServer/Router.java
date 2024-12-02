@@ -27,6 +27,7 @@ public class Router {
     private final FileHandle fileHandle;
     private final DirectoryHandle directoryHandle;
     private final CommonHandle commonHandle;
+    private final PermissionHandle permissionHandle;
 
     public void executeCommand(Client client, String command, PrintWriter controlOutWriter, UserSession userSession) {
         this.controlOutWriter = controlOutWriter;
@@ -137,6 +138,22 @@ public class Router {
                 commonHandle.finalizeRename(controlOutWriter, userSession.getCurrDirectory(),commands[1]);
                 break;
 
+            case PER:
+               try{
+                   permissionHandle.handleGetPermission(controlOutWriter,Long.parseLong(commands[1]));
+               }catch (Exception e){
+                   throw new RuntimeException();
+               }
+               break;
+            case CPER:
+                permissionHandle.handleAddPermission(controlOutWriter,commands[1]);
+                break;
+            case DPER:
+                permissionHandle.handleDelPermission(controlOutWriter,commands[1]);
+                break;
+            case PUB:
+                permissionHandle.handleChangePublic(controlOutWriter,commands[1]);
+                break;
             default:
                 sendMsgToClient(ResponseCode.NOT_IMPLEMENTED.getResponse());
                 break;

@@ -1,6 +1,7 @@
 package com.java.service.impl;
 
 import com.java.dto.FolderDTO;
+import com.java.dto.FolderWithPermissionDTO;
 import com.java.dto.UserDTO;
 import com.java.enums.AccessType;
 import com.java.model.File;
@@ -163,5 +164,21 @@ public class FolderServiceImpl implements FolderService {
             items.addAll(folders);
             items.addAll(files);
             return items;
+    }
+
+    public List<FolderWithPermissionDTO> findFoldersInFolderByUserAccess(Long folderId, Long userId) {
+        List<Object[]> results = folderRepository.findFoldersInFolderByUserAccessDTO(folderId, userId);
+
+        List<FolderWithPermissionDTO> foldersWithPermissions = new ArrayList<>();
+
+        for (Object[] result : results) {
+            Folder folder = (Folder) result[0];
+            String permission = (String) result[1]; // quyền người dùng
+
+            // Thêm vào DTO để trả về thông tin thư mục cùng quyền
+            foldersWithPermissions.add(new FolderWithPermissionDTO(folder, permission));
+        }
+
+        return foldersWithPermissions;
     }
 }

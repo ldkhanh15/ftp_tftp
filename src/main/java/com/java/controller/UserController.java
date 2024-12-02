@@ -22,7 +22,7 @@ public class UserController {
         }
     }
 
-    public List<Object[]> getUsers() {
+    public List<User> getUsers() {
         try {
             return userService.getAllUser();
         }

@@ -20,7 +20,12 @@ public enum Command {
     CWD,
     XPWD,
     XMKD,
-    XRMD;
+    XRMD,
+    PER,
+    CPER,
+    DPER,
+    PUB;
+
 
     public static Command fromString(String command) {
         try {

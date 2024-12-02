@@ -67,4 +67,15 @@ public class ItemServiceImpl implements ItemService {
     public Item findByItemId(Long itemId) {
         return itemRepository.findById(itemId).orElse(null);
     }
+
+    @Override
+    public Item getById(Long itemId) {
+        return itemRepository.findById(itemId).orElse(null);
+    }
+
+    @Override
+    public Item save(Item item) {
+        return itemRepository.save(item);
+    }
+
 }

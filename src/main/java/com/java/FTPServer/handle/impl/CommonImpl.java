@@ -33,6 +33,7 @@ public class CommonImpl implements CommonHandle {
     private Map<String, String> renameCache = new HashMap<>();
     private final UserController userController;
     private final FolderService folderService;
+
     @Override
     @FolderOwnerShip(action = AccessType.READ)
     public void listName(PrintWriter out, String currentDirectory) {
@@ -49,7 +50,7 @@ public class CommonImpl implements CommonHandle {
 
     @Override
     @FolderOwnerShip(action = AccessType.READ)
-    public void listDetail(PrintWriter out, String path){
+    public void listDetail(PrintWriter out, String path) {
         File directory = new File(path);
 
         if (directory.exists() && directory.isDirectory()) {
@@ -119,19 +120,17 @@ public class CommonImpl implements CommonHandle {
         try {
             rout = new PrintWriter(connectionHandle.getDataConnection().getOutputStream(), true);
 
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             log.error("Could not create byte streams {}", e.getMessage());
             System.err.println(e.getMessage());
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             System.err.println(e.getMessage());
         }
-        Optional<Folder> folder=folderService.findFolderIdByPath(directory.getAbsolutePath());
-        if(folder.isPresent()){
+        Optional<Folder> folder = folderService.findFolderIdByPath(directory.getAbsolutePath());
+        if (folder.isPresent()) {
             String s;
-            UserDTO user=userController.findByUserNameDTO(UserSessionManager.getUserSession().getUsername());
-            if(user.getRole()== Role.ADMIN){
+            UserDTO user = userController.findByUserNameDTO(UserSessionManager.getUserSession().getUsername());
+            if (user.getRole() == Role.ADMIN) {
                 File[] files = directory.listFiles();
                 if (files != null) {
                     for (File file : files) {
@@ -140,8 +139,8 @@ public class CommonImpl implements CommonHandle {
                 } else {
                     out.println("No files found in the directory.");
                 }
-            }else{
-                List<Item> items=folderService.findItemByAccess(folder.get().getItemId(),user.getId());
+            } else {
+                List<Item> items = folderService.findItemByAccess(folder.get().getItemId(), user.getId());
                 Set<String> itemNames = items.stream()
                         .map(item -> {
                             if (item instanceof com.java.model.File) {
@@ -180,37 +179,55 @@ public class CommonImpl implements CommonHandle {
         try {
             rout = new PrintWriter(connectionHandle.getDataConnection().getOutputStream(), true);
 
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             log.error("Could not create byte streams {}", e.getMessage());
             System.err.println(e.getMessage());
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             System.err.println(e.getMessage());
         }
 
+        Optional<Folder> folder = folderService.findFolderIdByPath(directory.getAbsolutePath());
+        if (folder.isPresent()) {
+            UserDTO user = userController.findByUserNameDTO(UserSessionManager.getUserSession().getUsername());
+            List<Item> items = folderService.findItemByAccess(folder.get().getItemId(), user.getId());
+            File[] files = directory.listFiles();
+            if (files != null) {
+                List<String> fileNames = Arrays.stream(files)
+                        .map(File::getName)
+                        .collect(Collectors.toList());
+                for (Item item : items) {
+                    String s = "";
+                    if (item instanceof Folder) {
+                        s += "d\t";
+                        s += "-\t";
+                    } else if(item instanceof com.java.model.File) {
+                        s += "-\t";
+                        s += ((com.java.model.File) item).getFileSize() + "\t";
+                    }
+                    s += item.getUpdatedAt()+ "\t";
+                    s+=item.getItemId()+"\t";
+                    String owner=item.getOwner().getUsername();
+                    s+=owner+"\t";
+                    if(owner.equalsIgnoreCase(user.getUsername())){
+                        s+="true\t";
+                    }else{
+                        s="false\t";
+                    }
+                    if (item instanceof Folder) {
+                        s += ((Folder) item).getFolderName() + "\n";
+                    } else if(item instanceof com.java.model.File) {
+                        s += ((com.java.model.File) item).getFileName() + "\n";
+                    }
 
-
-        File[] files = directory.listFiles();
-        if (files != null) {
-            for (File file : files) {
-                String s="";
-                if(file.isDirectory()){
-                    s+="d\t";
-                    s+="-\t";
-                }else{
-                    s+="-\t";
-                    s+=file.length()+"\t";
+                    rout.println(s);
                 }
-                s+=new Date(file.lastModified())+"\t";
-                s+=file.getName()+"\n";
-                rout.println(s);
+            } else {
+                out.println("No files found in the directory.");
             }
-        } else {
-            out.println("No files found in the directory.");
+            if (rout != null) {
+                rout.close();
+            }
         }
-        if (rout != null) {
-            rout.close();
-        }
+
     }
 }
