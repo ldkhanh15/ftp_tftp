@@ -8,6 +8,9 @@ import com.java.FTPServer.ulti.UserSessionManager;
 import com.java.controller.UserController;
 import com.java.dto.UserDTO;
 import com.java.enums.AccessType;
+import com.java.enums.Role;
+import com.java.model.Folder;
+import com.java.model.Item;
 import com.java.model.User;
 import com.java.service.FolderService;
 import lombok.RequiredArgsConstructor;
@@ -19,9 +22,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -125,22 +127,49 @@ public class CommonImpl implements CommonHandle {
         catch (Exception e) {
             System.err.println(e.getMessage());
         }
+        Optional<Folder> folder=folderService.findFolderIdByPath(directory.getAbsolutePath());
+        if(folder.isPresent()){
+            String s;
+            UserDTO user=userController.findByUserNameDTO(UserSessionManager.getUserSession().getUsername());
+            if(user.getRole()== Role.ADMIN){
+                File[] files = directory.listFiles();
+                if (files != null) {
+                    for (File file : files) {
+                        out.println(file.getName());
+                    }
+                } else {
+                    out.println("No files found in the directory.");
+                }
+            }else{
+                List<Item> items=folderService.findItemByAccess(folder.get().getItemId(),user.getId());
+                Set<String> itemNames = items.stream()
+                        .map(item -> {
+                            if (item instanceof com.java.model.File) {
+                                return ((com.java.model.File) item).getFileName();
+                            } else if (item instanceof Folder) {
+                                return ((Folder) item).getFolderName();
+                            }
+                            return null;
+                        })
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet());
+                File[] files = directory.listFiles();
+                if (files != null) {
+                    for (File file : files) {
+                        System.out.println(file.getName());
 
-        String s;
-        UserDTO user=userController.findByUserNameDTO(UserSessionManager.getUserSession().getUsername());
-
-        File[] files = directory.listFiles();
-        if (files != null) {
-            for (File file : files) {
-                if(!folderService.hasAccessToFolder(file.getAbsolutePath(), user, AccessType.READ)){
-                    rout.println(file.getName());
+                        if (itemNames.contains(file.getName())) {
+                            out.println(file.getName());
+                        }
+                    }
+                } else {
+                    out.println("No files found in the directory.");
                 }
             }
-        } else {
-            out.println("No files found in the directory.");
-        }
-        if (rout != null) {
-            rout.close();
+
+            if (rout != null) {
+                rout.close();
+            }
         }
     }
 

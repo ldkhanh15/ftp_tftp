@@ -5,6 +5,7 @@ import com.java.FTPServer.enums.TransferType;
 import com.java.FTPServer.handle.ConnectionHandle;
 import com.java.FTPServer.system.ConstFTP;
 import com.java.FTPServer.system.UserSession;
+import com.java.FTPServer.ulti.UserSessionManager;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
@@ -58,11 +59,16 @@ public class ConnectionHandleImpl implements ConnectionHandle {
     @Override
     public void processTypeTransfer(String typeTransfer, PrintWriter out, UserSession userSession) {
         if (typeTransfer.equals("A")){
-            userSession.setTransferMode(TransferType.ASCII);
+            UserSession session=UserSessionManager.getUserSession();
+            session.setTransferMode(TransferType.ASCII);
+            UserSessionManager.setUserSession(session);
             out.println(ResponseCode.COMMAND_OK.getResponse("Switching to ASCII mode"));
         }
         else if (typeTransfer.equals("I")){
-            userSession.setTransferMode(TransferType.BINARY);
+            UserSession session=UserSessionManager.getUserSession();
+            session.setTransferMode(TransferType.BINARY);
+            UserSessionManager.setUserSession(session);
+            UserSession session1=UserSessionManager.getUserSession();
             out.println(ResponseCode.COMMAND_OK.getResponse("Switching to Binary mode"));
         }
         else {
