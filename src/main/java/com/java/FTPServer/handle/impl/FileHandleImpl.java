@@ -54,7 +54,8 @@ public class FileHandleImpl implements FileHandle {
         Optional<Folder> folder=folderController.findFolderIdByPath(userSession.getCurrDirectory());
         if(folder.isPresent()){
             com.java.model.File file=new com.java.model.File(f.getName(),f.getPath(),f.length(),
-                    getFileType(f.getName()),folder.get());
+                    getFileType(f.getName()));
+            file.setParentFolder(folder.get());
             fileController.save(file);
         }
     }

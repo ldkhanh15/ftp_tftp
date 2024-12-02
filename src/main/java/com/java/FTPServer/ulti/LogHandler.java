@@ -36,7 +36,9 @@ public class LogHandler {
             bufferedWriter.newLine();
 
             // Ghi nội dung log
-            bufferedWriter.write(content);
+            if(content!=null){
+                bufferedWriter.write(content);
+            }
             bufferedWriter.newLine();
 
             // Ghi thông tin ngoại lệ nếu được cung cấp

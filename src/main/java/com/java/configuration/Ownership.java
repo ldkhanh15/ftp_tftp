@@ -33,9 +33,6 @@ public class Ownership {
     @Before("@annotation(folderOwnerShip) && args(out, ..)")
     public void checkFolderOwnership(FolderOwnerShip folderOwnerShip, PrintWriter out) throws Exception {
         UserSession userSession=UserSessionManager.getUserSession();
-        if (userSession == null) {
-            throw new Exception("User session is not set.");
-        }
         String username = userSession.getUsername();
         System.out.println("username: "+username);
         String currentDirectory=userSession.getCurrDirectory();
@@ -57,7 +54,6 @@ public class Ownership {
         }
 
         if (!folderService.hasAccessToFolder(currentDirectory, user, accessType)) {
-            System.out.println("Access denied.");
             out.println("550 Permission denied");
             throw new PermissionException("User does not permission");
         }
