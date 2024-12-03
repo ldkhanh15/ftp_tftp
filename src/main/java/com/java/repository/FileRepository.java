@@ -22,4 +22,11 @@ public interface FileRepository extends JpaRepository<File,Long> {
             @Param("folderId") Long folderId,
             @Param("userId") Long userId
     );
+    @Query("""
+    SELECT f FROM File f
+    WHERE f.parentFolder.itemId = :folderId
+""")
+    List<File> findFilesInFolderAdmin(
+            @Param("folderId") Long folderId
+    );
 }

@@ -15,6 +15,7 @@ import com.java.model.User;
 import com.java.service.FolderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Hibernate;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
@@ -126,66 +127,50 @@ public class CommonImpl implements CommonHandle {
         } catch (Exception e) {
             System.err.println(e.getMessage());
         }
-        Optional<Folder> folder = folderService.findFolderIdByPath(directory.getAbsolutePath());
-        if (folder.isPresent()) {
-            String s;
-            UserDTO user = userController.findByUserNameDTO(UserSessionManager.getUserSession().getUsername());
-            if (user.getRole() == Role.ADMIN) {
-                File[] files = directory.listFiles();
-                if (files != null) {
-                    for (File file : files) {
-                        out.println(file.getName());
-                    }
-                } else {
-                    out.println("No files found in the directory.");
-                }
-            } else {
-                List<Item> items = folderService.findItemByAccess(folder.get().getItemId(), user.getId());
-                Set<String> itemNames = items.stream()
-                        .map(item -> {
-                            if (item instanceof com.java.model.File) {
-                                return ((com.java.model.File) item).getFileName();
-                            } else if (item instanceof Folder) {
-                                return ((Folder) item).getFolderName();
-                            }
-                            return null;
-                        })
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toSet());
-                File[] files = directory.listFiles();
-                if (files != null) {
-                    for (File file : files) {
-                        System.out.println(file.getName());
-
-                        if (itemNames.contains(file.getName())) {
-                            out.println(file.getName());
-                        }
-                    }
-                } else {
-                    out.println("No files found in the directory.");
-                }
-            }
-
-            if (rout != null) {
-                rout.close();
-            }
-        }
-    }
-
-    private void retrieveFileDetail(PrintWriter out, File directory) {
-        out.println(ResponseCode.FILE_STARTING_TRANSFER.getResponse("Here comes the directory listing"));
-        PrintWriter rout = null;
-
-        try {
-            rout = new PrintWriter(connectionHandle.getDataConnection().getOutputStream(), true);
-
-        } catch (IOException e) {
-            log.error("Could not create byte streams {}", e.getMessage());
-            System.err.println(e.getMessage());
-        } catch (Exception e) {
-            System.err.println(e.getMessage());
-        }
-
+//        Optional<Folder> folder = folderService.findFolderIdByPath(directory.getAbsolutePath());
+//        if (folder.isPresent()) {
+//            String s;
+//            UserDTO user = userController.findByUserNameDTO(UserSessionManager.getUserSession().getUsername());
+//            if (user.getRole() == Role.ADMIN) {
+//                File[] files = directory.listFiles();
+//                if (files != null) {
+//                    for (File file : files) {
+//                        out.println(file.getName());
+//                    }
+//                } else {
+//                    out.println("No files found in the directory.");
+//                }
+//            } else {
+//                List<Item> items = folderService.findItemByAccess(folder.get().getItemId(), user.getId());
+//                Set<String> itemNames = items.stream()
+//                        .map(item -> {
+//                            if (item instanceof com.java.model.File) {
+//                                return ((com.java.model.File) item).getFileName();
+//                            } else if (item instanceof Folder) {
+//                                return ((Folder) item).getFolderName();
+//                            }
+//                            return null;
+//                        })
+//                        .filter(Objects::nonNull)
+//                        .collect(Collectors.toSet());
+//                File[] files = directory.listFiles();
+//                if (files != null) {
+//                    for (File file : files) {
+//                        System.out.println(file.getName());
+//
+//                        if (itemNames.contains(file.getName())) {
+//                            out.println(file.getName());
+//                        }
+//                    }
+//                } else {
+//                    out.println("No files found in the directory.");
+//                }
+//            }
+//
+//            if (rout != null) {
+//                rout.close();
+//            }
+//        }
         Optional<Folder> folder = folderService.findFolderIdByPath(directory.getAbsolutePath());
         if (folder.isPresent()) {
             UserDTO user = userController.findByUserNameDTO(UserSessionManager.getUserSession().getUsername());
@@ -228,6 +213,86 @@ public class CommonImpl implements CommonHandle {
                 rout.close();
             }
         }
+    }
 
+    private void retrieveFileDetail(PrintWriter out, File directory) {
+        out.println(ResponseCode.FILE_STARTING_TRANSFER.getResponse("Here comes the directory listing"));
+        PrintWriter rout = null;
+
+        try {
+            rout = new PrintWriter(connectionHandle.getDataConnection().getOutputStream(), true);
+
+        } catch (IOException e) {
+            log.error("Could not create byte streams {}", e.getMessage());
+            System.err.println(e.getMessage());
+        } catch (Exception e) {
+            System.err.println(e.getMessage());
+        }
+
+        Optional<Folder> folder = folderService.findFolderIdByPath(directory.getAbsolutePath());
+        if (folder.isPresent()) {
+            UserDTO user = userController.findByUserNameDTO(UserSessionManager.getUserSession().getUsername());
+            List<Item>items =null;
+            if(Role.ADMIN.equals(user.getRole())){
+                items=folderService.findItemByAdmin(folder.get().getItemId());
+            }else{
+               items = folderService.findItemByAccess(folder.get().getItemId(), user.getId());
+            }
+
+            File[] files = directory.listFiles();
+            if (files != null) {
+                List<String> fileNames = Arrays.stream(files)
+                        .map(File::getName)
+                        .collect(Collectors.toList());
+                for (Item item : items) {
+                    String s = "";
+                    System.out.println(item.getClass());
+                    if (item  instanceof Folder) {
+                        s += "d\t";
+                        s += "-\t";
+                    } else if(item instanceof com.java.model.File) {
+                        s += "-\t";
+                        s += ((com.java.model.File) item).getFileSize() + "\t";
+                    }
+
+                    if(item.getUpdatedAt()!=null){
+                        s += item.getUpdatedAt()+ "\t";
+                    }else{
+                        s += item.getCreatedAt()+ "\t";
+                    }
+                    s+=item.getItemId()+"\t";
+                    String owner=item.getOwner().getUsername();
+                    s+=owner+"\t";
+                    if(owner.equalsIgnoreCase(user.getUsername())){
+                        s+="true\t";
+                    }else{
+                        s+="false\t";
+                    }
+                    if (Hibernate.getClass(item).equals(Folder.class)) {
+                        s += ((Folder) item).getFolderName() + "\n";
+                    } else if(Hibernate.getClass(item).equals(com.java.model.File.class)) {
+                        s += ((com.java.model.File) item).getFileName() + "\n";
+                    }
+
+                    rout.println(s);
+                }
+            } else {
+                out.println("No files found in the directory.");
+            }
+            if (rout != null) {
+                rout.close();
+            }
+        }
+
+    }
+    private File findFileByName(String itemName, File[] files) {
+        if (files == null || itemName == null) {
+            return null;
+        }
+
+        return Arrays.stream(files)
+                .filter(file -> file.getName().equals(itemName))
+                .findFirst()
+                .orElse(null);
     }
 }

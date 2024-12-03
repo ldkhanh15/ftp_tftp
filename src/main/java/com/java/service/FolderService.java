@@ -20,4 +20,5 @@ public interface FolderService {
    boolean hasAccessToFolder(String fullPath, UserDTO user, AccessType accessType);
 
     List<Item> findItemByAccess(Long folderId, Long userId);
+    List<Item> findItemByAdmin(Long folderId);
 }

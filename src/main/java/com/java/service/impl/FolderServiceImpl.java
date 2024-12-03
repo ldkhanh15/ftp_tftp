@@ -166,6 +166,16 @@ public class FolderServiceImpl implements FolderService {
             return items;
     }
 
+    @Override
+    public List<Item> findItemByAdmin(Long folderId) {
+        List<Folder> folders = folderRepository.findFoldersInFolderAdmin(folderId);
+        List<File> files = fileRepository.findFilesInFolderAdmin(folderId);
+        List<Item> items = new ArrayList<>();
+        items.addAll(folders);
+        items.addAll(files);
+        return items;
+    }
+
     public List<FolderWithPermissionDTO> findFoldersInFolderByUserAccess(Long folderId, Long userId) {
         List<Object[]> results = folderRepository.findFoldersInFolderByUserAccessDTO(folderId, userId);
 

@@ -48,5 +48,11 @@ public interface FolderRepository extends JpaRepository<Folder, Long> {
             @Param("userId") Long userId
     );
 
-
+    @Query("""
+    SELECT f FROM Folder f
+    WHERE f.parentFolder.itemId = :folderId
+""")
+    List<Folder> findFoldersInFolderAdmin(
+            @Param("folderId") Long folderId
+    );
 }
