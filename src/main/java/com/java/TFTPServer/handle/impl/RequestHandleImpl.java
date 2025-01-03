@@ -74,7 +74,7 @@ public class RequestHandleImpl implements RequestHandle {
 
         if (delimiter == -1) {
             System.err.println("Corrupt request packet. Shutting down I guess.");
-            System.exit(1);
+//            System.exit(1);
         }
 
         String fileName = new String(buf, 2, delimiter - 2);
@@ -99,11 +99,9 @@ public class RequestHandleImpl implements RequestHandle {
 
     @Override
     public void HandleRQ(DatagramSocket sendSocket, String fileName, int reqType) {
-        File file = new File(ConstTFTP.READ_ROOT + "/" + fileName);
-        System.out.println("File path: " + file.getPath());
-        System.out.println("Path: "+ConstTFTP.READ_ROOT + "/" + fileName);
+        File file = new File(ConstTFTP.READ_ROOT+"/"+fileName);
         byte[] buf = new byte[ConstTFTP.BUFFER_SIZE - 4];
-        System.out.println(file.exists());
+
         if (reqType == Opcode.OP_RRQ.getCode()) {
             try (InputStream in = mode.equalsIgnoreCase(ConstTFTP.MODE_NETASCII) ? new NetAsciiInputStream(new FileInputStream(file)) : new FileInputStream(file)) {
                 short blockNum = 1;
@@ -121,14 +119,13 @@ public class RequestHandleImpl implements RequestHandle {
                         errorHandle.sendError(sendSocket, ServerResponseErrorCode.ERR_LOST.getCode(), ServerResponseErrorCode.ERR_LOST.getDescription());
                         return;
                     }
-                    if (length < 512) {
+                    if (length < ConstTFTP.BUFFER_SIZE - 4) {
                         in.close();
+                        System.out.println("SEND ALL SUCCESSFULLY");
                         break;
                     }
                 }
-                if (file.length() > 0) {
-                    handleSave(file);
-                }
+                handleSave(file);
             } catch (FileNotFoundException e) {
                 System.err.println("File not found. Sending error packet.");
                 errorHandle.sendError(sendSocket, ServerResponseErrorCode.ERR_FNF.getCode(), ServerResponseErrorCode.ERR_FNF.getDescription());
@@ -159,7 +156,7 @@ public class RequestHandleImpl implements RequestHandle {
                         byte[] data = dataPacket.getData();
                         out.write(data, 4, dataPacket.getLength() - 4);
                         System.out.println(dataPacket.getLength());
-                        if (dataPacket.getLength() - 4 < 512) {
+                        if (dataPacket.getLength() - 4 < ConstTFTP.BUFFER_SIZE - 4) {
                             sendSocket.send(dataAndAckHandle.ackPacket(blockNum));
                             System.out.println("All done writing file.");
                             out.close();
@@ -167,9 +164,7 @@ public class RequestHandleImpl implements RequestHandle {
                         }
                     }
                 }
-                if (file.length() > 0) {
-                    handleSave(file);
-                }
+                handleSave(file);
             } catch (IOException e) {
                 System.err.println("Error writing file.");
                 errorHandle.sendError(sendSocket, ServerResponseErrorCode.ERR_ACCESS.getCode(), ServerResponseErrorCode.ERR_ACCESS.getDescription());
