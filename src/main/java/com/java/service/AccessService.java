@@ -11,4 +11,6 @@ public interface AccessService {
      AccessItem getByUserAndItem(User user, Item item);
      void removeAccessByUserIdAndItemId(Long userId, Long itemId);
      public List<AccessItem> getAccessItemsByItem(Item item);
+
+     void removeAccessByUserAndItem(User user, Item item);
 }

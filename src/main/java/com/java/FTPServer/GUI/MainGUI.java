@@ -1,20 +1,31 @@
 package com.java.FTPServer.GUI;
 
 import com.java.configuration.AppConfig;
+import com.java.controller.UserController;
+import com.java.enums.Role;
 import com.java.model.Item;
+import com.java.model.User;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
 
 import javax.swing.*;
 import java.awt.*;
-
+@Component
+@Scope("prototype")
 public class MainGUI extends JFrame {
     private JTextArea logArea;
     private JPanel sidebarPanel;
     private CardLayout cardLayout;
     private JPanel contentPanel;
+    private final UserController userController;
+    private User user;
+    public MainGUI(UserController userController) {
+        this.userController = userController;
+    }
 
-    public MainGUI() {
+    public void init () {
         setTitle("FTP Server");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1200, 600);
@@ -27,16 +38,17 @@ public class MainGUI extends JFrame {
         }
 
 //        // Create connection panel
-//        JPanel connectionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-//        connectionPanel.add(new JLabel("Host:"));
-//        connectionPanel.add(new JTextField(10));
-//        connectionPanel.add(new JLabel("Username:"));
-//        connectionPanel.add(new JTextField(10));
-//        connectionPanel.add(new JLabel("Password:"));
-//        connectionPanel.add(new JPasswordField(10));
-//        connectionPanel.add(new JLabel("Port:"));
-//        connectionPanel.add(new JTextField(5));
-//        connectionPanel.add(new JButton("Quickconnect"));
+        JPanel connectionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        connectionPanel.add(new JLabel("Username:"));
+        JTextField usernameField = new JTextField(10);
+        connectionPanel.add(usernameField);
+        connectionPanel.add(new JLabel("Password:"));
+        JPasswordField passwordField = new JPasswordField(10);
+        connectionPanel.add(passwordField);
+
+        JButton loginButton = new JButton("Login");
+        connectionPanel.add(loginButton);
+
 
         // Create log area
         logArea = new JTextArea(5, 20);
@@ -76,13 +88,40 @@ public class MainGUI extends JFrame {
 
         // Main layout
         getContentPane().setLayout(new BorderLayout());
-       // getContentPane().add(connectionPanel, BorderLayout.NORTH);
+        getContentPane().add(connectionPanel, BorderLayout.NORTH);
         getContentPane().add(splitPane, BorderLayout.CENTER);
 
         setVisible(true);
         System.out.println("GUI is visible!");
-    }
+        sidebarPanel.setVisible(false);
+        contentPanel.setVisible(false);
 
+// Login button functionality
+        loginButton.addActionListener(e -> {
+            String username = usernameField.getText();
+            String password = new String(passwordField.getPassword());
+
+            // Replace with actual authentication logic
+            this.user=authenticateUser(username, password);
+            if (this.user != null) {
+                refreshFilePanel();
+                JOptionPane.showMessageDialog(this, "Login Successful!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                connectionPanel.setVisible(true); // Hide the login panel
+                sidebarPanel.setVisible(true);    // Show the sidebar
+                contentPanel.setVisible(true);    // Show the content
+
+            } else {
+                JOptionPane.showMessageDialog(this, "Invalid Credentials. Please try again.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+    }
+    private User authenticateUser(String username, String password) {
+        User user=userController.findByUsername(username);
+        if(user!=null && user.getPassword().equals(password) && user.getRole() == Role.ADMIN){
+            return user;
+        }
+        return null;
+    }
     // Create the sidebar panel with navigation buttons
     private JPanel createSidebarPanel() {
         JPanel sidebar = new JPanel();
@@ -133,6 +172,7 @@ public class MainGUI extends JFrame {
         ApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
         // Recreate the active connections panel to update its contents
         ItemManagement item = context.getBean(ItemManagement.class);
+        item.setUser(user);
         JPanel itemPanel = item.createFileFolderPanel();
 
         contentPanel.removeAll();

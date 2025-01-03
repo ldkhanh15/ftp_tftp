@@ -49,7 +49,8 @@ public class AccessItemController {
     public void removeAccess(String username, Long itemId){
         User user=userService.findByUsername(username);
         Item item=itemService.findByItemId(itemId);
-        accessService.removeAccessByUserIdAndItemId(user.getId(),item.getItemId());
+        //accessService.removeAccessByUserIdAndItemId(user.getId(),item.getItemId());
+        accessService.removeAccessByUserAndItem(user,item);
     }
     public List<AccessItem> getAccessItemsByItem(Item item){
         return accessService.getAccessItemsByItem(item);

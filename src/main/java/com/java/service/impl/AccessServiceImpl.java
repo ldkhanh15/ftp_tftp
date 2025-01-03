@@ -7,6 +7,7 @@ import com.java.repository.AccessRepository;
 import com.java.service.AccessService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -33,5 +34,11 @@ public class AccessServiceImpl implements AccessService {
     }
     public List<AccessItem> getAccessItemsByItem(Item item){
         return accessRepository.findByItem(item);
+    }
+
+    @Override
+    @Transactional
+    public void removeAccessByUserAndItem(User user, Item item) {
+        accessRepository.deleteByItemAndUser(item,user);
     }
 }

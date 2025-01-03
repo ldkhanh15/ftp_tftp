@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -23,13 +24,13 @@ import java.util.Objects;
 @Component
 @RequiredArgsConstructor
 public class PermissionHandleImpl implements PermissionHandle {
-    private ConnectionHandleImpl connectionHandle;
+    private final ConnectionHandleImpl connectionHandle;
     private final UserController userController;
     private final AccessItemController accessItemController;
     private final ItemController itemController;
     @Override
     public void handleGetPermission(PrintWriter out, Long itemId) {
-        out.println(ResponseCode.COMMAND_OK.getResponse("Starting get permission"));
+        out.println(ResponseCode.FILE_STARTING_TRANSFER.getResponse("Starting get permission"));
         PrintWriter rout = null;
         try {
             rout = new PrintWriter(connectionHandle.getDataConnection().getOutputStream(), true);
@@ -44,13 +45,20 @@ public class PermissionHandleImpl implements PermissionHandle {
         List<User> users=userController.getUsers();
         Item item=itemController.getById(itemId);
         List<AccessItem> accessItems=accessItemController.getAccessItemsByItem(item);
+        List<String> added=new ArrayList<>();
+        for(AccessItem accessItem:accessItems){
+            added.add(accessItem.getUser().getUsername());
+        }
         rout.println("USER");
         for(User user:users){
-            rout.println(user.getUsername());
+            if(!added.contains(user.getUsername())){
+                rout.println(user.getId()+"/"+user.getUsername());
+            }
+
         }
         rout.println("PERMISSION");
         for(AccessItem accessItem:accessItems){
-            rout.println(accessItem.getUser().getUsername()+" "+accessItem.getAccessType());
+            rout.println(accessItem.getId()+"/"+accessItem.getUser().getUsername()+"/"+accessItem.getAccessType());
         }
 
         if (rout != null) {
@@ -63,48 +71,17 @@ public class PermissionHandleImpl implements PermissionHandle {
 
     @Override
     public void handleAddPermission(PrintWriter out, String value) {
-        PrintWriter rout = null;
-        try {
-            rout = new PrintWriter(connectionHandle.getDataConnection().getOutputStream(), true);
-        }
-        catch (IOException e) {
-            log.error("Could not create byte streams {}", e.getMessage());
-            System.err.println(e.getMessage());
-        }
-        catch (Exception e) {
-            System.err.println(e.getMessage());
-        }
         handleSave(value);
-        if (rout != null) {
-            rout.close();
-        }
-
-        connectionHandle.closeDataConnection();
         out.println("200 Success add permission");
     }
 
     @Override
     public void handleDelPermission(PrintWriter out, String value) {
-        PrintWriter rout = null;
-        try {
-            rout = new PrintWriter(connectionHandle.getDataConnection().getOutputStream(), true);
-        }
-        catch (IOException e) {
-            log.error("Could not create byte streams {}", e.getMessage());
-            System.err.println(e.getMessage());
-        }
-        catch (Exception e) {
-            System.err.println(e.getMessage());
-        }
+
         String[] values=value.split("/");
         Long itemId=Long.parseLong(values[0]);
         String username=values[1];
         accessItemController.removeAccess(username,itemId);
-        if (rout != null) {
-            rout.close();
-        }
-
-        connectionHandle.closeDataConnection();
         out.println("200 Success delete permission");
     }
 

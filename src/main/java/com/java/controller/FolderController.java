@@ -1,11 +1,15 @@
 package com.java.controller;
 
+import com.java.FTPServer.system.UserSession;
+import com.java.FTPServer.ulti.UserSessionManager;
 import com.java.dto.FolderDTO;
 import com.java.dto.UserDTO;
 import com.java.enums.AccessType;
 import com.java.exception.DataNotFoundException;
 import com.java.model.Folder;
+import com.java.model.User;
 import com.java.service.FolderService;
+import com.java.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,18 +23,35 @@ import static com.java.enums.AccessType.WRITE;
 @Component
 public class FolderController {
     private final FolderService folderService;
-    public Folder save(String fullPath, String folderName) {
-        Optional<Folder> parentFolder=folderService.findFolderIdByPath(fullPath);
-        if(parentFolder.isPresent()){
-            Folder folder = new Folder();
-            folder.setFolderName(folderName);
-            folder.setParentFolder(parentFolder.get());
-            folder.setIsPublic(true);
-            return folderService.save(folder);
-        }else{
+    private final UserService userService;
+    public Folder save(String fullPath, String folderName, String username) {
+        // Use "admin" as the default username if none is provided
+        if (username == null || username.isEmpty()) {
+            username = "admin";
+        }
+
+        // Find the parent folder by its path
+        Optional<Folder> parentFolder = folderService.findFolderIdByPath(fullPath);
+        if (parentFolder.isEmpty()) {
             throw new DataNotFoundException("Path not found");
         }
+
+        // Find the user by username
+        User user = userService.findByUsername(username);
+        if (user == null) {
+            throw new DataNotFoundException("User not found");
+        }
+
+        // Create and save the new folder
+        Folder folder = new Folder();
+        folder.setOwner(user);
+        folder.setFolderName(folderName);
+        folder.setParentFolder(parentFolder.get());
+        folder.setIsPublic(true);
+
+        return folderService.save(folder);
     }
+
     public Folder save(Folder folder){
         return folderService.save(folder);
     }
@@ -48,6 +69,9 @@ public class FolderController {
 
     public Optional<Folder> findFolderIdByPath(String fullPath) {
         return folderService.findFolderIdByPath(fullPath);
+    }
+    public Optional<Folder> findFolderParentByPath(String fullPath) {
+        return folderService.findFolderParentByPath(fullPath);
     }
 
     public Optional<Folder> findFolderByFolderNameAndParentFolder(String folderName, Folder parentFolder) {

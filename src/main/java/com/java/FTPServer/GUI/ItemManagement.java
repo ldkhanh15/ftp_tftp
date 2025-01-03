@@ -9,6 +9,7 @@ import com.java.enums.AccessType;
 import com.java.model.AccessItem;
 import com.java.model.Folder;
 import com.java.model.User;
+import lombok.Setter;
 import org.springframework.stereotype.Component;
 
 import javax.swing.*;
@@ -38,6 +39,9 @@ public class ItemManagement {
     private final FolderController folderController;
     private final UserController userController;
     private final AccessItemController accessItemController;
+    @Setter
+    private User user;
+
 
     public ItemManagement(FileController fileController, FolderController folderController, UserController userController, AccessItemController accessItemController) {
         this.fileController = fileController;
@@ -95,7 +99,7 @@ public class ItemManagement {
 
                         // Cập nhật bảng ngay lập tức
                         updateFileTable(remoteTable, folderParent);
-                        folderController.save(folderParent.getAbsolutePath(), folderName);
+                        folderController.save(folderParent.getAbsolutePath(), folderName,user.getUsername());
                     }
                 }
             }
@@ -110,10 +114,35 @@ public class ItemManagement {
                 String newName = JOptionPane.showInputDialog(tree, "Nhập tên mới:", selectedNode.toString());
                 if (newName != null && !newName.isEmpty()) {
                     File folderToRename = getFolderFromNode(selectedNode);
-                    File renamedFolder = new File(folderToRename.getParent(), newName);
-                    if (folderToRename.renameTo(renamedFolder)) {
-                        selectedNode.setUserObject(renamedFolder.getName());
-                        ((DefaultTreeModel) tree.getModel()).reload(selectedNode);
+                    System.out.println("name: " + folderToRename.getName());
+                    System.out.println("new name: " + newName);
+                    Optional<Folder> folderParentOpt =
+                            folderController.findFolderParentByPath(folderToRename.getPath());
+                    System.out.println("path: "+ folderToRename.getPath());
+                    if (folderParentOpt.isPresent()) {
+                        Folder folderParent = folderParentOpt.get();
+                        Optional<Folder> folderIsExistOpt =
+                                folderController.findFolderByFolderNameAndParentFolder(newName,
+                                folderParent);
+                        if (folderIsExistOpt.isPresent()) {
+                            JOptionPane.showMessageDialog(tree, "Folder name is the same");
+                        } else {
+                            Optional<Folder> folderOpt = folderController.findFolderIdByPath(folderToRename.getAbsolutePath());
+                            if (folderOpt.isPresent()) {
+                                File renamedFolder = new File(folderToRename.getParent(), newName);
+                                Folder folder = folderOpt.get();
+                                folder.setFolderName(renamedFolder.getName());
+                                folderController.save(folder);
+                                if (folderToRename.renameTo(renamedFolder)) {
+                                    selectedNode.setUserObject(renamedFolder.getName());
+                                    ((DefaultTreeModel) tree.getModel()).reload(selectedNode);
+                                }
+                            } else {
+                                JOptionPane.showMessageDialog(tree, "Folder not found");
+                            }
+                        }
+                    }else{
+                        JOptionPane.showMessageDialog(tree, "Folder parent not found");
                     }
                 }
             }
@@ -264,7 +293,7 @@ public class ItemManagement {
 
                         // Cập nhật bảng ngay lập tức
                         updateFileTable(remoteTable, folderParent);
-                        folderController.save(folderParent.getAbsolutePath(), folderName);
+                        folderController.save(folderParent.getAbsolutePath(), folderName,user.getUsername());
                     }
                 }
             }
@@ -575,6 +604,7 @@ public class ItemManagement {
             }
         });
     }
+
     private void populateTree(DefaultMutableTreeNode parentNode, File folder) {
         File[] files = folder.listFiles();
         if (files != null) {
@@ -603,6 +633,7 @@ public class ItemManagement {
             return file.getName(); // Để hiển thị tên trong JTree
         }
     }
+
     private File getFileFromNode(DefaultMutableTreeNode node) {
         StringBuilder path = new StringBuilder();
         while (node != null && node.getUserObject() != null) {

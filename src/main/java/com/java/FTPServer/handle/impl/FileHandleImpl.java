@@ -7,7 +7,9 @@ import com.java.FTPServer.system.UserSession;
 import com.java.FTPServer.ulti.UserSessionManager;
 import com.java.controller.FileController;
 import com.java.controller.FolderController;
+import com.java.controller.UserController;
 import com.java.model.Folder;
+import com.java.model.User;
 import com.java.service.FileService;
 import com.java.service.FolderService;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +26,7 @@ public class FileHandleImpl implements FileHandle {
     private final ConnectionHandleImpl connectionHandle;
     private final FileController fileController;
     private final FolderController folderController;
+    private final UserController userController;
     private UserSession userSession;
     @Override
     public void uploadFile(PrintWriter out,String fileName,  UserSession userSession) {
@@ -53,10 +56,13 @@ public class FileHandleImpl implements FileHandle {
     }
     private void saveFile(File f){
         Optional<Folder> folder=folderController.findFolderIdByPath(userSession.getCurrDirectory());
+        User user=userController.findByUsername(UserSessionManager.getUserSession().getUsername());
         if(folder.isPresent()){
             com.java.model.File file=new com.java.model.File(f.getName(),f.getPath(),f.length(),
                     getFileType(f.getName()));
             file.setParentFolder(folder.get());
+            file.setOwner(user);
+            file.setIsPublic(true);
             fileController.save(file);
         }
     }

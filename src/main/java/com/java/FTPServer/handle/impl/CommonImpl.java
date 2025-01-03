@@ -262,7 +262,8 @@ public class CommonImpl implements CommonHandle {
                     }
                     s+=item.getItemId()+"\t";
                     String owner=item.getOwner().getUsername();
-                    s+=owner+"\t";
+                    s+=item.getIsPublic()+"\t";
+
                     if(owner.equalsIgnoreCase(user.getUsername())){
                         s+="true\t";
                     }else{

@@ -18,11 +18,14 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.Objects;
 
 @ToString
@@ -33,6 +36,7 @@ import java.util.Objects;
 @Setter
 @Scope("prototype")
 public class Client extends Thread {
+    private final PropertyChangeSupport propertyChangeSupport = new PropertyChangeSupport(this);
     private Socket controlSocket;
     private final Router router;
     private UserSession userSession;
@@ -40,6 +44,11 @@ public class Client extends Thread {
     public void init(Socket clientSocket, int dataPort) {
         this.dataPort=dataPort;
         this.controlSocket = clientSocket;
+        try {
+            this.controlSocket.setSoTimeout(300000);
+        } catch (SocketException e) {
+            LogHandler.write("logs/servers", "error.txt", "Error setting socket timeout", e);
+        }
     }
 
     public void run() {
@@ -121,5 +130,15 @@ public class Client extends Thread {
                 this.controlSocket
         );
     }
-
+    public void addPropertyChangeListener(PropertyChangeListener listener) {
+        propertyChangeSupport.addPropertyChangeListener(listener);
+    }
+    public void setUserSession(UserSession userSession) {
+        UserSession oldUserSession = this.userSession;
+        this.userSession = userSession;
+        propertyChangeSupport.firePropertyChange("userSession", oldUserSession, userSession);
+    }
+    public void removePropertyChangeListener(PropertyChangeListener listener) {
+        propertyChangeSupport.removePropertyChangeListener(listener);
+    }
 }

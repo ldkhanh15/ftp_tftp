@@ -15,6 +15,7 @@ public interface FolderService {
     Folder getFileById(Long id);
     List<Folder> getAll();
    Optional<Folder> findFolderIdByPath(String path);
+    Optional<Folder> findFolderParentByPath(String fullPath);
    Optional<Folder> findFolderByFolderNameAndParentFolder(String folderName, Folder parentFolder);
    @Transactional
    boolean hasAccessToFolder(String fullPath, UserDTO user, AccessType accessType);

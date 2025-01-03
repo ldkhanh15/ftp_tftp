@@ -23,8 +23,15 @@ public class AuthHandleImpl implements AuthHandle {
         userSession.setStatus(UserStatus.USER_ENTERED);
         UserSession userSession1 = UserSessionManager.getUserSession();
         userSession1.setUsername(username);
-        UserSessionManager.setUserSession(userSession1);
-        out.println(ResponseCode.NEED_PASSWORD.getResponse("Please specify the password"));
+        if(username.equalsIgnoreCase("anonymous")){
+            out.println(ResponseCode.USER_LOGGED_IN.getResponse("Login Successful"));
+            //UserSessionManager.setUserSession(userSession1);
+        }else{
+            UserSessionManager.setUserSession(userSession1);
+            out.println(ResponseCode.NEED_PASSWORD.getResponse("Please specify the password"));
+        }
+
+
     }
 
     @Override

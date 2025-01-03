@@ -64,9 +64,13 @@ public class Router {
         switch (commandType) {
             // Auth
             case USER:
+                userSession.setUsername(commands[1]);
+                client.getPropertyChangeSupport().firePropertyChange("username", null, commands[1]);
                 authHandle.handleUser(commands[1], controlOutWriter, userSession);
                 break;
             case PASS:
+                userSession.setStatus(UserStatus.LOGGED_IN);
+                client.getPropertyChangeSupport().firePropertyChange("loggedIn", false, true);
                 authHandle.handlePass(commands[1], controlOutWriter, userSession);
                 break;
             case QUIT:

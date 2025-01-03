@@ -71,6 +71,7 @@ public class UserManagement {
         JButton btnChangePassword = new JButton("Change Password");
         JButton btnActivate = new JButton("Activate");
         JButton btnDeactivate = new JButton("Deactivate");
+        JButton btnDeselect = new JButton("Deselect");
 
         buttonPanel.add(btnAdd);
         buttonPanel.add(btnUpdate);
@@ -79,8 +80,16 @@ public class UserManagement {
         buttonPanel.add(btnChangePassword);
         buttonPanel.add(btnActivate);
         buttonPanel.add(btnDeactivate);
+        buttonPanel.add(btnDeselect);
 
         // Add listeners for buttons
+        btnDeselect.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                userTable.clearSelection(); // Clear the table's selection
+                clearForm(txtUserId, txtUsername, txtName, txtPassword, txtConfirmPassword); // Reset form fields
+            }
+        });
         btnAdd.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {

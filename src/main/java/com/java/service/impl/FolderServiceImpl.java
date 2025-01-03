@@ -4,6 +4,7 @@ import com.java.dto.FolderDTO;
 import com.java.dto.FolderWithPermissionDTO;
 import com.java.dto.UserDTO;
 import com.java.enums.AccessType;
+import com.java.model.AccessItem;
 import com.java.model.File;
 import com.java.model.Folder;
 import com.java.model.Item;
@@ -88,6 +89,41 @@ public class FolderServiceImpl implements FolderService {
 
         return Optional.of(currentFolder);
     }
+    @Transactional
+    public Optional<Folder> findFolderParentByPath(String fullPath) {
+        fullPath = fullPath.replace("/", "\\");
+
+        String rootFolderName = "ftp_root";
+        String[] folderNames;
+
+        int rootIndex = fullPath.indexOf(rootFolderName);
+        if (rootIndex == -1) {
+            return Optional.empty();
+        }
+        String relativePath = fullPath.substring(rootIndex);
+        folderNames = relativePath.split("\\\\");
+
+        if (folderNames.length == 0 || !folderNames[0].equals(rootFolderName)) {
+            return Optional.empty();
+        }
+        Optional<Folder> currentFolderOpt = folderRepository.findByFolderNameAndParentFolderIsNull(folderNames[0]);
+        if (currentFolderOpt.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Folder currentFolder = currentFolderOpt.get();
+
+        for (int i = 1; i < folderNames.length-1; i++) {
+            String folderName = folderNames[i];
+            currentFolderOpt = folderRepository.findByFolderNameAndParentFolder(folderName, currentFolder);
+            if (currentFolderOpt.isEmpty()) {
+                return Optional.empty();
+            }
+            currentFolder = currentFolderOpt.get();
+        }
+
+        return Optional.of(currentFolder);
+    }
 
     @Override
     public Optional<Folder> findFolderByFolderNameAndParentFolder(String folderName, Folder parentFolder) {
@@ -145,13 +181,23 @@ public class FolderServiceImpl implements FolderService {
 
     @Transactional
     protected boolean hasAccess(UserDTO user, FolderDTO folder, AccessType accessType) {
+        // Nếu folder có owner là "anonymous", trả về true
+        if (folder.getOwnerUsername().equals("anonymous")) {
+            return true;
+        }
+        // Nếu user là owner của folder, trả về true
         if (isOwner(user, folder)) {
             return true;
         }
-//        return accessItemRepository.findAccessItemsByFolderIdAndUserId(folder.getItemId(), user.getId()).stream()
-//                .anyMatch(accessItem -> checkAccessType(accessItem.getAccessType(), accessType));
-        return accessItemRepository.findAccessItemsByFolderIdAndUserId(folder.getItemId(), user.getId()).getAccessType().equals(accessType);
+        // Tìm AccessItem theo folderId và userId
+        AccessItem accessItem = accessItemRepository.findAccessItemsByFolderIdAndUserId(folder.getItemId(), user.getId());
+        // Nếu không tìm thấy AccessItem hoặc accessType không khớp, trả về false
+        if (accessItem == null) {
+            return false;
+        }
+        return accessItem.getAccessType().equals(accessType);
     }
+
 
     private boolean isOwner(UserDTO user, FolderDTO folder) {
         return user.getId().equals(folder.getOwnerId());

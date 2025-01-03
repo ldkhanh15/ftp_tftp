@@ -32,10 +32,11 @@ public class Server {
     public static List<Client> clients;
     private ServerSocket serverSocket;
     boolean serverRunning = true;
-    private MainGUI mainGUI;
+    //private MainGUI mainGUI;
     public void start() {
 
-        mainGUI=new MainGUI();
+        MainGUI mainGUI = applicationContext.getBean(MainGUI.class);
+        mainGUI.init();
         clients=new ArrayList<>();
         try {
             serverSocket = new ServerSocket(PORT);

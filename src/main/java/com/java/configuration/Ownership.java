@@ -33,7 +33,12 @@ public class Ownership {
     @Before("@annotation(folderOwnerShip) && args(out, ..)")
     public void checkFolderOwnership(FolderOwnerShip folderOwnerShip, PrintWriter out) throws Exception {
         UserSession userSession=UserSessionManager.getUserSession();
-        String username = userSession.getUsername();
+        String username = "";
+        if(userSession!=null){
+            username=userSession.getUsername();
+        }else{
+            username="anonymous";
+        }
         System.out.println("username: "+username);
         String currentDirectory=userSession.getCurrDirectory();
         if (username == null) {

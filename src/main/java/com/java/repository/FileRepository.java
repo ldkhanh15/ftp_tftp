@@ -16,7 +16,7 @@ public interface FileRepository extends JpaRepository<File,Long> {
     SELECT file FROM File file
     LEFT JOIN AccessItem ai ON ai.item = file AND ai.user.id = :userId
     WHERE file.parentFolder.itemId = :folderId
-    AND (file.isPublic = true OR ai IS NOT NULL OR file.owner.id = :userId)
+    AND (file.isPublic = true OR ai IS NOT NULL OR file.owner.id = :userId OR file.owner.username='anonymous')
 """)
     List<File> findFilesInFolderByUserAccess(
             @Param("folderId") Long folderId,

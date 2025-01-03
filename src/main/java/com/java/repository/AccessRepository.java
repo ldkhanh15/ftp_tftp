@@ -7,6 +7,7 @@ import com.java.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -16,7 +17,9 @@ public interface AccessRepository extends JpaRepository<AccessItem,Long> {
 
     @Query("DELETE FROM AccessItem ai WHERE ai.item.itemId = :itemId AND ai.user.id = :userId")
     void deleteAccessItemByItemIdAndUserId(@Param("itemId") Long itemId, @Param("userId") Long userId);
-    
+
+    @Transactional
+    void deleteByItemAndUser(Item item, User user);
     
     
     List<AccessItem> findByItem(Item item);

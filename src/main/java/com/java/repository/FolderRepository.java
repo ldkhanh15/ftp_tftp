@@ -30,7 +30,7 @@ public interface FolderRepository extends JpaRepository<Folder, Long> {
     SELECT f FROM Folder f
     LEFT JOIN AccessItem ai ON ai.item = f AND ai.user.id = :userId
     WHERE f.parentFolder.itemId = :folderId
-    AND (f.isPublic = true OR ai IS NOT NULL OR f.owner.id = :userId)
+    AND (f.isPublic = true OR ai IS NOT NULL OR f.owner.id = :userId OR f.owner.username='anonymous')
 """)
     List<Folder> findFoldersInFolderByUserAccess(
             @Param("folderId") Long folderId,
