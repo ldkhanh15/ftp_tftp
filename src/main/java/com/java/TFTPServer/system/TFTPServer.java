@@ -41,7 +41,7 @@ public class TFTPServer {
 
 
     public void start() throws SocketException {
-        byte[] buf = new byte[ConstTFTP.BUFFER_SIZE];
+        byte[] buf = new byte[ConstTFTP.MAX_SIZE];
         DatagramSocket socket = new DatagramSocket(null);
 
         SocketAddress localBindPoint = new InetSocketAddress(ConstTFTP.PORT_TFTP);
@@ -55,7 +55,10 @@ public class TFTPServer {
                 continue;
 
             final StringBuffer requestedFile = new StringBuffer();
-            final int reqtype = requestHandle.ParseRQ(buf, requestedFile);
+            final int reqtype = requestHandle.ParseRQ(buf, requestedFile).getOpcode();
+            final int size = requestHandle.ParseRQ(buf, requestedFile).getSize();
+            System.out.println("Request type: " + reqtype + ", Size: " + size);
+
 
             new Thread() {
                 public void run() {
@@ -68,9 +71,9 @@ public class TFTPServer {
                                 " from " + clientAddress.getHostName() + " using port " + clientAddress.getPort());
 
                         if (reqtype == Opcode.OP_RRQ.getCode()) {
-                            requestHandle.HandleRQ(sendSocket, requestedFile.toString(), Opcode.OP_RRQ.getCode());
+                            requestHandle.HandleRQ(sendSocket, requestedFile.toString(), Opcode.OP_RRQ.getCode(), size);
                         } else {
-                            requestHandle.HandleRQ(sendSocket, requestedFile.toString(), Opcode.OP_WRQ.getCode());
+                            requestHandle.HandleRQ(sendSocket, requestedFile.toString(), Opcode.OP_WRQ.getCode(), size);
                         }
                         sendSocket.close();
                     } catch (SocketException e) {

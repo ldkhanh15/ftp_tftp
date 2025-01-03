@@ -23,9 +23,9 @@ public class DataAndAckHandleImpl implements DataAndAckHandle {
         this.errorHandle = errorHandle;
     }
     @Override
-    public DatagramPacket ResponseACKAndReceiveData(DatagramSocket sendSocket, DatagramPacket sendAck, short block){
+    public DatagramPacket ResponseACKAndReceiveData(DatagramSocket sendSocket, DatagramPacket sendAck, short block, int SIZE){
         int retryCount = 0;
-        byte[] rec = new byte[ConstTFTP.BUFFER_SIZE];
+        byte[] rec = new byte[SIZE];
         DatagramPacket receiver = new DatagramPacket(rec, rec.length);
 
         while (true) {
@@ -69,9 +69,9 @@ public class DataAndAckHandleImpl implements DataAndAckHandle {
         }
     }
     @Override
-    public boolean SendDataAndReceiveAck(DatagramSocket sendSocket, DatagramPacket sender, short blockNum){
+    public boolean SendDataAndReceiveAck(DatagramSocket sendSocket, DatagramPacket sender, short blockNum, int SIZE){
         int retryCount = 0;
-        byte[] rec = new byte[ConstTFTP.BUFFER_SIZE];
+        byte[] rec = new byte[SIZE];
         DatagramPacket receiver = new DatagramPacket(rec, rec.length);
 
         while (true) {
@@ -107,15 +107,15 @@ public class DataAndAckHandleImpl implements DataAndAckHandle {
             }
         }
     }
-    public DatagramPacket ackPacket(short block){
-        ByteBuffer buffer = ByteBuffer.allocate(ConstTFTP.BUFFER_SIZE);
+    public DatagramPacket ackPacket(short block, int SIZE){
+        ByteBuffer buffer = ByteBuffer.allocate(SIZE);
         buffer.putShort(Opcode.OP_ACK.getCode());
         buffer.putShort(block);
 
         return new DatagramPacket(buffer.array(), 4);
     }
-    public DatagramPacket dataPacket(short block, byte[] data, int length){
-        ByteBuffer buffer = ByteBuffer.allocate(ConstTFTP.BUFFER_SIZE);
+    public DatagramPacket dataPacket(short block, byte[] data, int length, int SIZE){
+        ByteBuffer buffer = ByteBuffer.allocate(SIZE);
         buffer.putShort(Opcode.OP_DAT.getCode());
         buffer.putShort(block);
         buffer.put(data, 0, length);

@@ -10,6 +10,6 @@ import java.net.DatagramSocket;
 import java.nio.ByteBuffer;
 
 public interface ErrorHandle {
-    void sendError(DatagramSocket sendSocket, short errorCode, String errMsg);
+    void sendError(DatagramSocket sendSocket, short errorCode, String errMsg, int SIZE);
     void parseError(ByteBuffer buffer);
 }

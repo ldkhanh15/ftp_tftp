@@ -3,6 +3,7 @@ package com.java.TFTPServer.handle.impl;
 import com.java.FTPServer.ulti.UserSessionManager;
 import com.java.TFTPServer.custom.NetAsciiInputStream;
 import com.java.TFTPServer.custom.NetAsciiOutputStream;
+import com.java.TFTPServer.custom.OpcodeSizeCustom;
 import com.java.TFTPServer.enums.Opcode;
 import com.java.TFTPServer.enums.ServerResponseErrorCode;
 import com.java.TFTPServer.handle.DataAndAckHandle;
@@ -44,7 +45,6 @@ public class RequestHandleImpl implements RequestHandle {
     }
 
     public static String mode;
-
     @Override
     public InetSocketAddress receiveFrom(DatagramSocket socket, byte[] buf) {
         DatagramPacket receivePacket = new DatagramPacket(buf, buf.length);
@@ -61,10 +61,49 @@ public class RequestHandleImpl implements RequestHandle {
     }
 
     @Override
-    public short ParseRQ(byte[] buf, StringBuffer requestedFile) {
+//    public short ParseRQ(byte[] buf, StringBuffer requestedFile) {
+//        ByteBuffer wrap = ByteBuffer.wrap(buf);
+//        short opcode = wrap.getShort();
+//        int delimiter = -1;
+//        for (int i = 2; i < buf.length; i++) {
+//            if (buf[i] == 0) {
+//                delimiter = i;
+//                break;
+//            }
+//        }
+//
+//        if (delimiter == -1) {
+//            System.err.println("Corrupt request packet. Shutting down I guess.");
+////            System.exit(1);
+//        }
+//
+//        String fileName = new String(buf, 2, delimiter - 2);
+//        requestedFile.append(fileName);
+//
+//        for (int i = delimiter + 1; i < buf.length; i++) {
+//            if (buf[i] == 0) {
+//                String temp = new String(buf, delimiter + 1, i - (delimiter + 1));
+//                mode = temp;
+//                if (temp.equalsIgnoreCase(ConstTFTP.MODE_OCTET) || temp.equalsIgnoreCase(ConstTFTP.MODE_NETASCII)) {
+//                    return opcode;
+//                } else {
+//                    System.err.println("No mode specified.");
+//                    //System.exit(1);
+//                }
+//            }
+//        }
+//        System.err.println("Did not find delimiter.");
+//        //System.exit(1);
+//        return 0;
+//    }
+
+    public OpcodeSizeCustom ParseRQ(byte[] buf, StringBuffer requestedFile) {
         ByteBuffer wrap = ByteBuffer.wrap(buf);
-        short opcode = wrap.getShort();
+        short opcode = wrap.getShort();  // Lấy opcode từ gói tin
         int delimiter = -1;
+        int blksize = 0;  // Mặc định giá trị blksize là 0
+
+        // Tìm delimiter (null byte) để tách tên file và mode
         for (int i = 2; i < buf.length; i++) {
             if (buf[i] == 0) {
                 delimiter = i;
@@ -73,34 +112,58 @@ public class RequestHandleImpl implements RequestHandle {
         }
 
         if (delimiter == -1) {
-            System.err.println("Corrupt request packet. Shutting down I guess.");
-//            System.exit(1);
+            System.err.println("Corrupt request packet.");
+            return null;  // Nếu gói tin bị lỗi, trả về null
         }
 
+        // Lấy tên file
         String fileName = new String(buf, 2, delimiter - 2);
-        requestedFile.append(fileName);
+        requestedFile.setLength(0);
+        requestedFile.append(fileName);  // Append tên file vào StringBuffer
 
+        // Tìm mode và kiểm tra xem có blksize không
+//        String mode = null;
         for (int i = delimiter + 1; i < buf.length; i++) {
             if (buf[i] == 0) {
                 String temp = new String(buf, delimiter + 1, i - (delimiter + 1));
                 mode = temp;
-                if (temp.equalsIgnoreCase(ConstTFTP.MODE_OCTET) || temp.equalsIgnoreCase(ConstTFTP.MODE_NETASCII)) {
-                    return opcode;
+                if (temp.equalsIgnoreCase(ConstTFTP.MODE_NETASCII) || temp.equalsIgnoreCase(ConstTFTP.MODE_OCTET)) {
+                    // Kiểm tra tùy chọn blksize nếu có
+                    int optionStart = i + 1;
+                    if (optionStart < buf.length) {  // Kiểm tra còn dữ liệu sau delimiter không
+                        String option = new String(buf, optionStart, 7);  // Tìm "blksize"
+                        if ("blksize".equals(option)) {
+                            int sizeStart = optionStart + 8;  // Sau "blksize\0"
+                            int sizeEnd = -1;
+                            for (int j = sizeStart; j < buf.length; j++) {
+                                if (buf[j] == 0) {
+                                    sizeEnd = j;
+                                    break;
+                                }
+                            }
+                            if (sizeEnd > sizeStart) {
+                                String blkSizeStr = new String(buf, sizeStart, sizeEnd - sizeStart);
+                                blksize = Integer.parseInt(blkSizeStr);
+                            }
+                        }
+                    }
+                    return new OpcodeSizeCustom(opcode, blksize);  // Trả về đối tượng với opcode và blksize
                 } else {
-                    System.err.println("No mode specified.");
-                    //System.exit(1);
+                    System.err.println("Invalid mode specified.");
+                    return null;
                 }
             }
         }
-        System.err.println("Did not find delimiter.");
-        //System.exit(1);
-        return 0;
+
+        return null;  // Nếu không tìm thấy delimiter hoặc mode hợp lệ, trả về null
     }
 
+
+
     @Override
-    public void HandleRQ(DatagramSocket sendSocket, String fileName, int reqType) {
+    public void HandleRQ(DatagramSocket sendSocket, String fileName, int reqType, int SIZE) {
         File file = new File(ConstTFTP.READ_ROOT+"/"+fileName);
-        byte[] buf = new byte[ConstTFTP.BUFFER_SIZE - 4];
+        byte[] buf = new byte[SIZE - 4];
 
         if (reqType == Opcode.OP_RRQ.getCode()) {
             try (InputStream in = mode.equalsIgnoreCase(ConstTFTP.MODE_NETASCII) ? new NetAsciiInputStream(new FileInputStream(file)) : new FileInputStream(file)) {
@@ -109,17 +172,17 @@ public class RequestHandleImpl implements RequestHandle {
                     int length = in.read(buf);
                     if (length == -1) length = 0;
                     // đóng gói data để gửi cho client
-                    DatagramPacket sender = dataAndAckHandle.dataPacket(blockNum, buf, length);
+                    DatagramPacket sender = dataAndAckHandle.dataPacket(blockNum, buf, length, SIZE);
                     System.out.println("Sending.........");
                     // gửi data đi và nhận về ack từ client, kiểm tra đúng ack đúng thì return true, ngược lại thì false
-                    if (dataAndAckHandle.SendDataAndReceiveAck(sendSocket, sender, blockNum++)) {
+                    if (dataAndAckHandle.SendDataAndReceiveAck(sendSocket, sender, blockNum++, SIZE)) {
                         System.out.println("Success. Send another. BlockNum = " + blockNum);
                     } else {
                         System.err.println("Error. Lost connection.");
-                        errorHandle.sendError(sendSocket, ServerResponseErrorCode.ERR_LOST.getCode(), ServerResponseErrorCode.ERR_LOST.getDescription());
+                        errorHandle.sendError(sendSocket, ServerResponseErrorCode.ERR_LOST.getCode(), ServerResponseErrorCode.ERR_LOST.getDescription(), SIZE);
                         return;
                     }
-                    if (length < ConstTFTP.BUFFER_SIZE - 4) {
+                    if (length < SIZE - 4) {
                         in.close();
                         System.out.println("SEND ALL SUCCESSFULLY");
                         break;
@@ -128,14 +191,14 @@ public class RequestHandleImpl implements RequestHandle {
                 handleSave(file);
             } catch (FileNotFoundException e) {
                 System.err.println("File not found. Sending error packet.");
-                errorHandle.sendError(sendSocket, ServerResponseErrorCode.ERR_FNF.getCode(), ServerResponseErrorCode.ERR_FNF.getDescription());
+                errorHandle.sendError(sendSocket, ServerResponseErrorCode.ERR_FNF.getCode(), ServerResponseErrorCode.ERR_FNF.getDescription(), SIZE);
             } catch (IOException e) {
                 System.err.println("Error reading file.");
             }
         } else if (reqType == Opcode.OP_WRQ.getCode()) {
             if (file.exists()) {
                 System.out.println("File already exists.");
-                errorHandle.sendError(sendSocket, ServerResponseErrorCode.ERR_EXISTS.getCode(), ServerResponseErrorCode.ERR_EXISTS.getDescription());
+                errorHandle.sendError(sendSocket, ServerResponseErrorCode.ERR_EXISTS.getCode(), ServerResponseErrorCode.ERR_EXISTS.getDescription(), SIZE);
                 return;
             }
             try (OutputStream out = mode.equalsIgnoreCase(ConstTFTP.MODE_NETASCII) ? new NetAsciiOutputStream(new FileOutputStream(file)) : new FileOutputStream(file)) {
@@ -143,10 +206,10 @@ public class RequestHandleImpl implements RequestHandle {
                 while (true) {
                     // response ACK cho client, sau đó nhận gói data mới đồng thời kiểm tra có đúng blockNum mong đợi hay không
                     // trả về gói data mới nhận nếu kiểm tra đúng blockNum
-                    DatagramPacket dataPacket = dataAndAckHandle.ResponseACKAndReceiveData(sendSocket, dataAndAckHandle.ackPacket(blockNum++), blockNum);
+                    DatagramPacket dataPacket = dataAndAckHandle.ResponseACKAndReceiveData(sendSocket, dataAndAckHandle.ackPacket(blockNum++, SIZE), blockNum, SIZE);
                     if (dataPacket == null) {
                         System.err.println("Error. Lost connection.");
-                        errorHandle.sendError(sendSocket, ServerResponseErrorCode.ERR_LOST.getCode(), ServerResponseErrorCode.ERR_LOST.getDescription());
+                        errorHandle.sendError(sendSocket, ServerResponseErrorCode.ERR_LOST.getCode(), ServerResponseErrorCode.ERR_LOST.getDescription(), SIZE);
                         out.close();
                         System.out.println("Deleting incomplete file.");
                         file.delete();
@@ -156,8 +219,8 @@ public class RequestHandleImpl implements RequestHandle {
                         byte[] data = dataPacket.getData();
                         out.write(data, 4, dataPacket.getLength() - 4);
                         System.out.println(dataPacket.getLength());
-                        if (dataPacket.getLength() - 4 < ConstTFTP.BUFFER_SIZE - 4) {
-                            sendSocket.send(dataAndAckHandle.ackPacket(blockNum));
+                        if (dataPacket.getLength() - 4 < SIZE - 4) {
+                            sendSocket.send(dataAndAckHandle.ackPacket(blockNum, SIZE));
                             System.out.println("All done writing file.");
                             out.close();
                             break;
@@ -167,12 +230,13 @@ public class RequestHandleImpl implements RequestHandle {
                 handleSave(file);
             } catch (IOException e) {
                 System.err.println("Error writing file.");
-                errorHandle.sendError(sendSocket, ServerResponseErrorCode.ERR_ACCESS.getCode(), ServerResponseErrorCode.ERR_ACCESS.getDescription());
+                errorHandle.sendError(sendSocket, ServerResponseErrorCode.ERR_ACCESS.getCode(), ServerResponseErrorCode.ERR_ACCESS.getDescription(), SIZE);
             }
         } else {
             System.err.println("Unknown request type.");
         }
     }
+
 
     private void handleSave(File file) {
         Optional<Folder> folder = folderController.findFolderIdByPath(ConstTFTP.READ_ROOT);

@@ -15,8 +15,8 @@ import java.nio.ByteBuffer;
 public class ErrorHandleImpl implements ErrorHandle {
 
     @Override
-    public void sendError(DatagramSocket sendSocket, short errorCode, String errMsg) {
-        ByteBuffer wrap = ByteBuffer.allocate(ConstTFTP.BUFFER_SIZE);
+    public void sendError(DatagramSocket sendSocket, short errorCode, String errMsg, int SIZE) {
+        ByteBuffer wrap = ByteBuffer.allocate(SIZE);
         wrap.putShort(Opcode.OP_ERR.getCode());
         wrap.putShort(errorCode);
         wrap.put(errMsg.getBytes());
