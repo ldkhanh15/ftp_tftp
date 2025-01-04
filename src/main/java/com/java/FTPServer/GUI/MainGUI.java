@@ -26,7 +26,7 @@ public class MainGUI extends JFrame {
     }
 
     public void init () {
-        setTitle("FTP Server");
+        setTitle("Server");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1200, 600);
         setLocationRelativeTo(null);
