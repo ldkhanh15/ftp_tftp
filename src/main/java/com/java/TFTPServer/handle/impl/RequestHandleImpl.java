@@ -190,7 +190,7 @@ public class RequestHandleImpl implements RequestHandle {
                         break;
                     }
                 }
-                handleSave(file);
+
             } catch (FileNotFoundException e) {
                 System.err.println("File not found. Sending error packet.");
                 errorHandle.sendError(sendSocket, ServerResponseErrorCode.ERR_FNF.getCode(), ServerResponseErrorCode.ERR_FNF.getDescription(), SIZE);
@@ -225,11 +225,12 @@ public class RequestHandleImpl implements RequestHandle {
                             sendSocket.send(dataAndAckHandle.ackPacket(blockNum, SIZE));
                             System.out.println("All done writing file.");
                             out.close();
+                            handleSave(file);
                             break;
                         }
                     }
                 }
-                handleSave(file);
+
             } catch (IOException e) {
                 System.err.println("Error writing file.");
                 errorHandle.sendError(sendSocket, ServerResponseErrorCode.ERR_ACCESS.getCode(), ServerResponseErrorCode.ERR_ACCESS.getDescription(), SIZE);
@@ -243,13 +244,20 @@ public class RequestHandleImpl implements RequestHandle {
     private void handleSave(File file) {
         Optional<Folder> folder = folderController.findFolderIdByPath(ConstTFTP.READ_ROOT);
         if (folder.isPresent()) {
-            com.java.model.File fileDB = new com.java.model.File(file.getName(), file.getPath(), file.length(),
-                    getFileType(file.getName()));
-            fileDB.setParentFolder(folder.get());
-            User user = userController.findByUsername("anonymous");
-            fileDB.setOwner(user);
-            fileDB.setIsPublic(true);
-            fileController.save(fileDB);
+            Optional<com.java.model.File> fileDB=fileController.findByPath(file.getPath());
+            com.java.model.File fileSave=null;
+            if(fileDB.isPresent()){
+                fileSave=fileDB.get();
+                fileSave.setFileSize(file.length());
+            }else{
+                fileSave = new com.java.model.File(file.getName(), file.getPath(), file.length(),
+                        getFileType(file.getName()));
+                fileSave.setParentFolder(folder.get());
+                User user = userController.findByUsername("anonymous");
+                fileSave.setOwner(user);
+                fileSave.setIsPublic(true);
+            }
+            fileController.save(fileSave);
         } else {
             Folder parent = folderController.save("ftp_root", "public", "anonymous");
             com.java.model.File fileDB = new com.java.model.File(file.getName(), file.getPath(), file.length(),

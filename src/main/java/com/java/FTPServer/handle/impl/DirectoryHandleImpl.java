@@ -41,6 +41,10 @@ public class DirectoryHandleImpl implements DirectoryHandle {
     @FolderOwnerShip(action = AccessType.WRITE)
     public void createDirectory( PrintWriter out,String directoryName, String currDirectory) {
         try {
+            if(directoryName.endsWith("ftp_root")){
+                out.println(ResponseCode.FILE_CONFLICT.getResponse("Create directory operation failed"));
+                return;
+            }
             File directory = new File(currDirectory + "/" + directoryName);
             if (!directory.exists()) {
                 if (directory.mkdirs()) {

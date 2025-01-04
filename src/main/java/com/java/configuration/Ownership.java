@@ -70,7 +70,7 @@ public class Ownership {
     public void checkFolderWithPathOwnership(FolderOwnerShip folderOwnerShip, PrintWriter out,
                                              String currentDirectory) throws Exception {
 
-        if(!currentDirectory.startsWith("/public")){
+        if(!currentDirectory.contains("ftp_root/public") || !currentDirectory.contains("ftp_root\\public")){
             UserSession userSession=UserSessionManager.getUserSession();
             String username = "";
             String path= ConstFTP.ROOT_DIR;
