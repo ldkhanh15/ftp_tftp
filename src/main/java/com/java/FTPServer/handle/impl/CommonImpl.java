@@ -83,7 +83,13 @@ public class CommonImpl implements CommonHandle {
             log.error("RNFR: File '{}' not found in directory '{}'.", nameOnServer, currentDirectory);
         }
     }
-
+    private String getFileType(String fileName) {
+        int lastIndexOfDot = fileName.lastIndexOf('.');
+        if (lastIndexOfDot > 0 && lastIndexOfDot < fileName.length() - 1) {
+            return fileName.substring(lastIndexOfDot + 1).toLowerCase();
+        }
+        return "unknown";
+    }
     @Override
     @FolderOwnerShip(action = AccessType.WRITE)
     public void finalizeRename(PrintWriter out, String currentDirectory, String newName) {
@@ -94,13 +100,21 @@ public class CommonImpl implements CommonHandle {
 
             if (oldFile.exists()) {
                 File newFile = new File(currentDirectory, newName);
-                Optional<com.java.model.File> fileOpt=fileController.findByPath(oldFile.getPath());
-                if(fileOpt.isPresent()){
-                    com.java.model.File file=fileOpt.get();
-                    String[]names=oldName.split("\\.");
-                    file.setFileName(oldName);
-                    file.setFileType(names[1]);
-                    fileController.save(file);
+                if(oldFile.isDirectory()){
+                    Optional<com.java.model.Folder> folderOpt=folderService.findFolderIdByPath(oldFile.getPath());
+                    if(folderOpt.isPresent()){
+                        com.java.model.Folder file=folderOpt.get();
+                        file.setFolderName(newFile.getName());
+                        folderService.save(file);
+                    }
+                }else if(oldFile.isFile()){
+                    Optional<com.java.model.File> fileOpt=fileController.findByPath(oldFile.getPath());
+                    if(fileOpt.isPresent()){
+                        com.java.model.File file=fileOpt.get();
+                        file.setFileName(newFile.getName());
+                        file.setFileType(getFileType(newFile.getName()));
+                        fileController.save(file);
+                    }
                 }
                 if (oldFile.renameTo(newFile)) {
                     out.println("250 Requested file action okay, completed.");

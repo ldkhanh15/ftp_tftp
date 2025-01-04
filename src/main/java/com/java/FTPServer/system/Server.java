@@ -80,15 +80,15 @@ public class Server {
         }
     }
     private int getAvailableDataPort() {
-        int dataPort;
-        while (true) {
-            dataPort = 1024 + (int)(Math.random() * (65535 - 1024));
-
-            if (!dataPorts.contains(dataPort)) {
-                dataPorts.add(dataPort);
-                break;
-            }
-        }
+        int dataPort=20;
+//        while (true) {
+//            dataPort = 1024 + (int)(Math.random() * (65535 - 1024));
+//
+//            if (!dataPorts.contains(dataPort)) {
+//                dataPorts.add(dataPort);
+//                break;
+//            }
+//        }
         return dataPort;
     }
 }

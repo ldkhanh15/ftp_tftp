@@ -42,9 +42,16 @@ public class ConnectionHandleImpl implements ConnectionHandle {
 
     @Override
     public void processPassiveMode(PrintWriter out, int dataPort, boolean isExtended) {
-        String[] myIpSplit = "192.168.1.11".split("\\.");
+        InetAddress inetAddress = null;
+        try {
+            inetAddress = InetAddress.getLocalHost();
+        } catch (UnknownHostException e) {
+            throw new RuntimeException(e);
+        }
+        String serverIp = inetAddress.getHostAddress();
+        String[] myIpSplit = serverIp.split("\\.");
 //      String[] myIpSplit = IP_SERVER.split("\\.");
-        dataPort = 1099;
+//        dataPort = 1099;
         if (isExtended) {
             out.println(ResponseCode.USER_EXIT_ACKNOWLEDGED.getResponse("Entering Extended Passive Mode (|||" + dataPort + "|)"));
         } else {
@@ -138,7 +145,10 @@ public class ConnectionHandleImpl implements ConnectionHandle {
     private void openDataConnectionActive(String ipAddress, int port) {
         try {
             //InetAddress.getByName(IP_SERVER), PORT_DATA
+            System.out.println("IP ADDRESS: " + ipAddress);
+            System.out.println("PORT: " + port);
             dataConnection = new Socket(ipAddress, port);
+            System.out.println("Data connection - Active Mode - established");
             log.info("Data connection - Active Mode - established");
         } catch (IOException e) {
             log.error("Could not connect to client data socket {}", e.getMessage());
