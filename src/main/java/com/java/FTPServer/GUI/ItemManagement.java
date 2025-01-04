@@ -6,6 +6,7 @@ import com.java.controller.FileController;
 import com.java.controller.FolderController;
 import com.java.controller.UserController;
 import com.java.enums.AccessType;
+import com.java.enums.Role;
 import com.java.model.AccessItem;
 import com.java.model.Folder;
 import com.java.model.User;
@@ -411,6 +412,9 @@ public class ItemManagement {
                 List<User> users = userController.findAll();
                 Long itemId = 0L;
                 for (User user : users) {
+                    if(user.getRole().equals(Role.ADMIN) || user.getUsername().equals("anonymous")){
+                        continue;
+                    }
                     searchListModel.addElement(user.getUsername());
                 }
                 JScrollPane searchScrollPane = new JScrollPane(searchList);
@@ -488,7 +492,10 @@ public class ItemManagement {
 
                     if (!searchQuery.isEmpty()) {
                         List<User> userSearchList = (userController.searchByUsername(searchQuery));
-                        for (User user : userSearchList) {
+                        for (User user : users) {
+                            if(user.getRole().equals(Role.ADMIN) || user.getUsername().equals("anonymous")){
+                                continue;
+                            }
                             searchListModel.addElement(user.getUsername());
                         }
 
@@ -506,9 +513,31 @@ public class ItemManagement {
                 JPanel actionPanel = new JPanel(new FlowLayout());
                 JButton applyButton = new JButton("Áp dụng");
                 JButton cancelButton = new JButton("Hủy");
+                JButton deleteUserButton = new JButton("Xóa người dùng");
+                Long finalItemId = itemId;
+                deleteUserButton.addActionListener(event -> {
+                    int selected = userTable.getSelectedRow(); // Lấy dòng được chọn
+                    if (selected != -1) {
+                        String username = (String) userTable.getValueAt(selected, 0); // Lấy username từ cột đầu tiên
+                        int confirm = JOptionPane.showConfirmDialog(permissionDialog,
+                                "Bạn có chắc chắn muốn xóa người dùng này?",
+                                "Xác nhận xóa", JOptionPane.YES_NO_OPTION);
+
+                        if (confirm == JOptionPane.YES_OPTION) {
+                            // Gọi hàm controller để xóa quyền của người dùng
+                            accessItemController.removeAccess(username, finalItemId);
+
+                            // Xóa dòng khỏi bảng
+                            tableModel.removeRow(selected);
+                        }
+                    } else {
+                        JOptionPane.showMessageDialog(permissionDialog,
+                                "Vui lòng chọn một người dùng để xóa.");
+                    }
+                });
 
                 // Xử lý nút Apply
-                Long finalItemId = itemId;
+
                 applyButton.addActionListener(event -> {
                     for (int i = 0; i < tableModel.getRowCount(); i++) {
                         String username = (String) tableModel.getValueAt(i, 0);
@@ -527,7 +556,7 @@ public class ItemManagement {
 
                 actionPanel.add(applyButton);
                 actionPanel.add(cancelButton);
-
+                actionPanel.add(deleteUserButton);
                 // Panel chứa danh sách tìm kiếm và nút thêm
                 JPanel searchResultPanel = new JPanel(new BorderLayout());
                 searchResultPanel.add(searchScrollPane, BorderLayout.CENTER);
