@@ -452,9 +452,12 @@ public class ItemManagement {
                 }
                 DefaultTableModel tableModel = new DefaultTableModel(new Object[]{"Username", "Quyền"}, 0);
                 JTable userTable = new JTable(tableModel);
-                for (AccessItem accessItem : accessItems) {
-                    tableModel.addRow(new Object[]{accessItem.getUser().getUsername(), accessItem.getAccessType()});
+                if(accessItems!=null){
+                    for (AccessItem accessItem : accessItems) {
+                        tableModel.addRow(new Object[]{accessItem.getUser().getUsername(), accessItem.getAccessType()});
+                    }
                 }
+
 
                 // Dropdown chọn quyền
                 JComboBox<String> permissionComboBox = new JComboBox<>(new String[]{"READ", "WRITE", "ALL"});
