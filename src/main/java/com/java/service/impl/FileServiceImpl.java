@@ -5,6 +5,7 @@ import com.java.model.File;
 import com.java.model.Folder;
 import com.java.model.User;
 import com.java.repository.FileRepository;
+import com.java.repository.FolderRepository;
 import com.java.service.FileService;
 import com.java.service.FolderService;
 import com.java.service.UserService;
@@ -16,11 +17,13 @@ import java.util.Optional;
 @Service
 public class FileServiceImpl implements FileService {
     private final FileRepository fileRepository;
+    private final FolderRepository folderRepository;
     private final FolderService folderService;
     private final UserService userService;
 
-    public FileServiceImpl(FileRepository fileRepository, FolderService folderService, UserService userService) {
+    public FileServiceImpl(FileRepository fileRepository, FolderRepository folderRepository, FolderService folderService, UserService userService) {
         this.fileRepository = fileRepository;
+        this.folderRepository = folderRepository;
         this.folderService = folderService;
         this.userService = userService;
     }
@@ -66,6 +69,50 @@ public class FileServiceImpl implements FileService {
     public File getFileById(Long id) {
         return fileRepository.findById(id).orElse(null);
     }
+
+    @Override
+    public Optional<File> findByPath(String fullPath) {
+        fullPath = fullPath.replace("/", "\\");
+
+        String rootFolderName = "ftp_root";
+        String[] folderNames;
+
+        int rootIndex = fullPath.indexOf(rootFolderName);
+        if (rootIndex == -1) {
+            return Optional.empty();
+        }
+        String relativePath = fullPath.substring(rootIndex);
+        folderNames = relativePath.split("\\\\");
+
+        if (folderNames.length == 0 || !folderNames[0].equals(rootFolderName)) {
+            return Optional.empty();
+        }
+
+        // Tìm thư mục gốc
+        Optional<Folder> currentFolderOpt = folderRepository.findByFolderNameAndParentFolderIsNull(folderNames[0]);
+        if (currentFolderOpt.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Folder currentFolder = currentFolderOpt.get();
+
+        // Duyệt qua các phần tử trong đường dẫn (trừ phần tử cuối cùng)
+        for (int i = 1; i < folderNames.length - 1; i++) {
+            String folderName = folderNames[i];
+            currentFolderOpt = folderRepository.findByFolderNameAndParentFolder(folderName, currentFolder);
+            if (currentFolderOpt.isEmpty()) {
+                return Optional.empty();
+            }
+            currentFolder = currentFolderOpt.get();
+        }
+
+        // Kiểm tra phần tử cuối cùng bằng fileService
+        String lastElement = folderNames[folderNames.length - 1];
+        Optional<File> fileOpt = fileRepository.findByFileNameAndParentFolder(lastElement, currentFolder);
+
+        return fileOpt;
+    }
+
 
     @Override
     public List<File> getAll() {

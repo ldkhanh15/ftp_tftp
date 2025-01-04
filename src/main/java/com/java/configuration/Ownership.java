@@ -31,41 +31,41 @@ public class Ownership {
         this.folderService = folderService;
     }
 
-    @Before(value = "@annotation(folderOwnerShip) && args(out, ..)", argNames = "folderOwnerShip,out")
-    public void checkFolderOwnership(FolderOwnerShip folderOwnerShip, PrintWriter out) throws Exception {
-        UserSession userSession=UserSessionManager.getUserSession();
-        String username = "";
-        if(userSession!=null){
-            username=userSession.getUsername();
-        }else{
-            username="anonymous";
-        }
-        System.out.println("username: "+username);
-        String currentDirectory=userSession.getCurrDirectory();
-        if (username == null) {
-            throw new Exception("User is not authenticated.");
-        }
-
-        UserDTO user=userService.findByUserNameDTO(username);
-        if (user == null) {
-            throw new Exception("User not found.");
-        }
-
-        AccessType accessType = folderOwnerShip.action();
-        System.out.println(ROLE_ADMIN);
-        System.out.println(user.getRole());
-        if (Role.ADMIN.equals(user.getRole())) {
-            System.out.println("User is an admin. Access granted.");
-            return;
-        }
-
-        if (!folderService.hasAccessToFolder(currentDirectory, user, accessType)) {
-            out.println("550 Permission denied");
-            throw new PermissionException("User does not permission");
-        }
-
-        System.out.println("Access granted.");
-    }
+//    @Before(value = "@annotation(folderOwnerShip) && args(out, ..)", argNames = "folderOwnerShip,out")
+//    public void checkFolderOwnership(FolderOwnerShip folderOwnerShip, PrintWriter out) throws Exception {
+//        UserSession userSession=UserSessionManager.getUserSession();
+//        String username = "";
+//        if(userSession!=null){
+//            username=userSession.getUsername();
+//        }else{
+//            username="anonymous";
+//        }
+//        System.out.println("username: "+username);
+//        String currentDirectory=userSession.getCurrDirectory();
+//        if (username == null) {
+//            throw new Exception("User is not authenticated.");
+//        }
+//
+//        UserDTO user=userService.findByUserNameDTO(username);
+//        if (user == null) {
+//            throw new Exception("User not found.");
+//        }
+//
+//        AccessType accessType = folderOwnerShip.action();
+//        System.out.println(ROLE_ADMIN);
+//        System.out.println(user.getRole());
+//        if (Role.ADMIN.equals(user.getRole())) {
+//            System.out.println("User is an admin. Access granted.");
+//            return;
+//        }
+//
+//        if (!folderService.hasAccessToFolder(currentDirectory, user, accessType)) {
+//            out.println("550 Permission denied");
+//            throw new PermissionException("User does not permission");
+//        }
+//
+//        System.out.println("Access granted.");
+//    }
     @Before(value = "@annotation(folderOwnerShip) && args(out,currentDirectory, ..)", argNames = "folderOwnerShip,out,currentDirectory")
     public void checkFolderWithPathOwnership(FolderOwnerShip folderOwnerShip, PrintWriter out,
                                              String currentDirectory) throws Exception {

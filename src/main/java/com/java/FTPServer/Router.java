@@ -32,7 +32,8 @@ public class Router {
     public void executeCommand(Client client, String command, PrintWriter controlOutWriter, UserSession userSession) {
         this.controlOutWriter = controlOutWriter;
         String[] commands;
-        commands = command.split(" ");
+        System.out.println(command);
+        commands = command.split(" ",2);
         Command commandType = Command.fromString(commands[0]);
         if (commandType == null) {
             sendMsgToClient(ResponseCode.NOT_IMPLEMENTED.getResponse());

@@ -170,9 +170,9 @@ public class FileHandleImpl implements FileHandle {
             return;
         }
         if (file.delete()) {
-            Optional<Folder> folder=folderController.findFolderIdByPath(userSession.getCurrDirectory());
+            Optional<Folder> folder=folderController.findFolderIdByPath(file.getParent());
             if(folder.isPresent()){
-                com.java.model.File fileDB=fileController.findByFileNameAndFolderParent(fileName,folder.get());
+                com.java.model.File fileDB=fileController.findByFileNameAndFolderParent(file.getName(),folder.get());
                 fileController.deleteById(fileDB.getItemId());
             }
             out.println(ResponseCode.FILE_COMPLETED_TRANSFER.getResponse("File deleted successfully"));

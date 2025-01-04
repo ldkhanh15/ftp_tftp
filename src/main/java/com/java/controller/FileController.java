@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Optional;
 
 @RequiredArgsConstructor
 @Component
@@ -17,6 +18,9 @@ public class FileController {
     }
     public void deleteById(Long id) {
         fileService.deleteById(id);
+    }
+    public Optional<File> findByPath(String path) {
+        return fileService.findByPath(path);
     }
     public File getFileById(Long id) {
         return fileService.getFileById(id);

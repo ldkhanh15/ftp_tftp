@@ -45,7 +45,7 @@ public class Client extends Thread {
         this.dataPort=dataPort;
         this.controlSocket = clientSocket;
         try {
-            this.controlSocket.setSoTimeout(300000);
+            this.controlSocket.setSoTimeout(600000);
         } catch (SocketException e) {
             LogHandler.write("logs/servers", "error.txt", "Error setting socket timeout", e);
         }

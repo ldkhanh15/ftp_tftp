@@ -87,25 +87,25 @@ public class PermissionHandleImpl implements PermissionHandle {
 
     @Override
     public void handleChangePublic(PrintWriter out, String value) {
-        PrintWriter rout = null;
-        try {
-            rout = new PrintWriter(connectionHandle.getDataConnection().getOutputStream(), true);
-        } catch (IOException e) {
-            log.error("Could not create byte streams {}", e.getMessage());
-            System.err.println(e.getMessage());
-        } catch (Exception e) {
-            System.err.println(e.getMessage());
-        }
+//        PrintWriter rout = null;
+//        try {
+//            rout = new PrintWriter(connectionHandle.getDataConnection().getOutputStream(), true);
+//        } catch (IOException e) {
+//            log.error("Could not create byte streams {}", e.getMessage());
+//            System.err.println(e.getMessage());
+//        } catch (Exception e) {
+//            System.err.println(e.getMessage());
+//        }
         String[] values = value.split("/");
         Long itemId = Long.parseLong(values[0]);
         String check = values[1];
-        boolean isPublic = Boolean.getBoolean(check);
-        itemController.changePublic(itemId, isPublic);
-        if (rout != null) {
-            rout.close();
-        }
-
-        connectionHandle.closeDataConnection();
+        boolean isPublic = Boolean.parseBoolean(check);
+        itemController.changePublic(itemId, !isPublic);
+//        if (rout != null) {
+//            rout.close();
+//        }
+//
+//        connectionHandle.closeDataConnection();
         out.println("200 Success active/deactive public item");
     }
 

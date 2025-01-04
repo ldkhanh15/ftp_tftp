@@ -10,6 +10,7 @@ public interface FileService {
     File save(File folder);
     void deleteById(Long id);
     File getFileById(Long id);
+    Optional<File> findByPath(String path);
     List<File> getAll();
     File findByFileNameAndFolderParent(String fileName, Folder parent);
 

@@ -5,6 +5,7 @@ import com.java.FTPServer.anotation.ItemOwnerShip;
 import com.java.FTPServer.enums.ResponseCode;
 import com.java.FTPServer.handle.CommonHandle;
 import com.java.FTPServer.ulti.UserSessionManager;
+import com.java.controller.FileController;
 import com.java.controller.UserController;
 import com.java.dto.UserDTO;
 import com.java.enums.AccessType;
@@ -34,6 +35,7 @@ public class CommonImpl implements CommonHandle {
     private Map<String, String> renameCache = new HashMap<>();
     private final UserController userController;
     private final FolderService folderService;
+    private final FileController fileController;
 
     @Override
     @FolderOwnerShip(action = AccessType.READ)
@@ -76,7 +78,7 @@ public class CommonImpl implements CommonHandle {
             out.flush();
             log.info("RNFR: File '{}' found. Waiting for RNTO command.", nameOnServer);
         } else {
-            out.println("550 Requested action not taken. File not found. 1");
+            out.println("550 Requested action not taken. File not found.");
             out.flush();
             log.error("RNFR: File '{}' not found in directory '{}'.", nameOnServer, currentDirectory);
         }
@@ -92,7 +94,14 @@ public class CommonImpl implements CommonHandle {
 
             if (oldFile.exists()) {
                 File newFile = new File(currentDirectory, newName);
-
+                Optional<com.java.model.File> fileOpt=fileController.findByPath(oldFile.getPath());
+                if(fileOpt.isPresent()){
+                    com.java.model.File file=fileOpt.get();
+                    String[]names=oldName.split("\\.");
+                    file.setFileName(oldName);
+                    file.setFileType(names[1]);
+                    fileController.save(file);
+                }
                 if (oldFile.renameTo(newFile)) {
                     out.println("250 Requested file action okay, completed.");
                     out.flush();
@@ -103,7 +112,7 @@ public class CommonImpl implements CommonHandle {
                     log.error("RNTO: Failed to rename '{}' to '{}'.", oldName, newName);
                 }
             } else {
-                out.println("550 Requested action not taken. File not found. 2");
+                out.println("550 Requested action not taken. File not found.");
                 out.flush();
                 log.error("RNTO: File '{}' not found in directory '{}'.", oldName, currentDirectory);
             }
@@ -182,22 +191,22 @@ public class CommonImpl implements CommonHandle {
                         .collect(Collectors.toList());
                 for (Item item : items) {
                     String s = "";
-                    if (item instanceof Folder) {
-                        s += "d\t";
-                        s += "-\t";
-                    } else if(item instanceof com.java.model.File) {
-                        s += "-\t";
-                        s += ((com.java.model.File) item).getFileSize() + "\t";
-                    }
-                    s += item.getUpdatedAt()+ "\t";
-                    s+=item.getItemId()+"\t";
-                    String owner=item.getOwner().getUsername();
-                    s+=owner+"\t";
-                    if(owner.equalsIgnoreCase(user.getUsername())){
-                        s+="true\t";
-                    }else{
-                        s="false\t";
-                    }
+//                    if (item instanceof Folder) {
+//                        s += "d\t";
+//                        s += "-\t";
+//                    } else if(item instanceof com.java.model.File) {
+//                        s += "-\t";
+//                        s += ((com.java.model.File) item).getFileSize() + "\t";
+//                    }
+//                    s += item.getUpdatedAt()+ "\t";
+//                    s+=item.getItemId()+"\t";
+//                    String owner=item.getOwner().getUsername();
+//                    s+=owner+"\t";
+//                    if(owner.equalsIgnoreCase(user.getUsername())){
+//                        s+="true\t";
+//                    }else{
+//                        s="false\t";
+//                    }
                     if (item instanceof Folder) {
                         s += ((Folder) item).getFolderName() + "\n";
                     } else if(item instanceof com.java.model.File) {

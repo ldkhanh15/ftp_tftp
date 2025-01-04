@@ -10,6 +10,7 @@ import java.net.SocketException;
 
 public class Main {
     public static void main(String[] args) throws java.net.SocketException {
+        System.out.println("Starting FTP and TFTP servers...");
         ApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
         TFTPServer tftpServer = context.getBean(TFTPServer.class);
         Server server = context.getBean(Server.class);
