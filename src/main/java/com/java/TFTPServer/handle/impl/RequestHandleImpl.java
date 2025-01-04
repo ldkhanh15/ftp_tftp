@@ -147,6 +147,8 @@ public class RequestHandleImpl implements RequestHandle {
                             }
                         }
                     }
+                    if (blksize == 0)
+                        blksize = 516;  // Nếu không tìm thấy blksize, mặc định là 516
                     return new OpcodeSizeCustom(opcode, blksize);  // Trả về đối tượng với opcode và blksize
                 } else {
                     System.err.println("Invalid mode specified.");
