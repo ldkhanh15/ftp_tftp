@@ -7,6 +7,7 @@ import com.java.controller.AccessItemController;
 import com.java.controller.ItemController;
 import com.java.controller.UserController;
 import com.java.enums.AccessType;
+import com.java.enums.Role;
 import com.java.model.AccessItem;
 import com.java.model.Item;
 import com.java.model.User;
@@ -28,37 +29,36 @@ public class PermissionHandleImpl implements PermissionHandle {
     private final UserController userController;
     private final AccessItemController accessItemController;
     private final ItemController itemController;
+
     @Override
     public void handleGetPermission(PrintWriter out, Long itemId) {
         out.println(ResponseCode.FILE_STARTING_TRANSFER.getResponse("Starting get permission"));
         PrintWriter rout = null;
         try {
             rout = new PrintWriter(connectionHandle.getDataConnection().getOutputStream(), true);
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             log.error("Could not create byte streams {}", e.getMessage());
             System.err.println(e.getMessage());
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             System.err.println(e.getMessage());
         }
-        List<User> users=userController.getUsers();
-        Item item=itemController.getById(itemId);
-        List<AccessItem> accessItems=accessItemController.getAccessItemsByItem(item);
-        List<String> added=new ArrayList<>();
-        for(AccessItem accessItem:accessItems){
+        List<User> users = userController.getUsers();
+        Item item = itemController.getById(itemId);
+        List<AccessItem> accessItems = accessItemController.getAccessItemsByItem(item);
+        List<String> added = new ArrayList<>();
+        for (AccessItem accessItem : accessItems) {
             added.add(accessItem.getUser().getUsername());
         }
         rout.println("USER");
-        for(User user:users){
-            if(!added.contains(user.getUsername())){
-                rout.println(user.getId()+"/"+user.getUsername());
+        for (User user : users) {
+            if (!user.getRole().equals(Role.ADMIN) && !added.contains(user.getUsername()) && !user.getUsername().equals(
+                    "anonymous")) {
+                rout.println(user.getId() + "/" + user.getUsername());
             }
-
         }
         rout.println("PERMISSION");
-        for(AccessItem accessItem:accessItems){
-            rout.println(accessItem.getId()+"/"+accessItem.getUser().getUsername()+"/"+accessItem.getAccessType());
+        for (AccessItem accessItem : accessItems) {
+            rout.println(accessItem.getId() + "/" + accessItem.getUser().getUsername() + "/" + accessItem.getAccessType());
         }
 
         if (rout != null) {
@@ -78,10 +78,10 @@ public class PermissionHandleImpl implements PermissionHandle {
     @Override
     public void handleDelPermission(PrintWriter out, String value) {
 
-        String[] values=value.split("/");
-        Long itemId=Long.parseLong(values[0]);
-        String username=values[1];
-        accessItemController.removeAccess(username,itemId);
+        String[] values = value.split("/");
+        Long itemId = Long.parseLong(values[0]);
+        String username = values[1];
+        accessItemController.removeAccess(username, itemId);
         out.println("200 Success delete permission");
     }
 
@@ -90,19 +90,17 @@ public class PermissionHandleImpl implements PermissionHandle {
         PrintWriter rout = null;
         try {
             rout = new PrintWriter(connectionHandle.getDataConnection().getOutputStream(), true);
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             log.error("Could not create byte streams {}", e.getMessage());
             System.err.println(e.getMessage());
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             System.err.println(e.getMessage());
         }
-        String[] values=value.split("/");
-        Long itemId=Long.parseLong(values[0]);
-        String check=values[1];
-        boolean isPublic=Boolean.getBoolean(check);
-        itemController.changePublic(itemId,isPublic);
+        String[] values = value.split("/");
+        Long itemId = Long.parseLong(values[0]);
+        String check = values[1];
+        boolean isPublic = Boolean.getBoolean(check);
+        itemController.changePublic(itemId, isPublic);
         if (rout != null) {
             rout.close();
         }
@@ -110,11 +108,12 @@ public class PermissionHandleImpl implements PermissionHandle {
         connectionHandle.closeDataConnection();
         out.println("200 Success active/deactive public item");
     }
-    private void handleSave(String value){
-        String[] values=value.split("/");
-        Long itemId=Long.parseLong(values[0]);
-        String username=values[1];
-        AccessType accessType=AccessType.valueOf(values[2].toUpperCase());
-        accessItemController.addAccess(username,itemId,accessType);
+
+    private void handleSave(String value) {
+        String[] values = value.split("/");
+        Long itemId = Long.parseLong(values[0]);
+        String username = values[1];
+        AccessType accessType = AccessType.valueOf(values[2].toUpperCase());
+        accessItemController.addAccess(username, itemId, accessType);
     }
 }

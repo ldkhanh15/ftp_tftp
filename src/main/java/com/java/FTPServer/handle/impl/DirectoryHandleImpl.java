@@ -38,19 +38,20 @@ public class DirectoryHandleImpl implements DirectoryHandle {
         folderController.deleteById(folder.getItemId());
     }
     @Override
+    @FolderOwnerShip(action = AccessType.WRITE)
     public void createDirectory( PrintWriter out,String directoryName, String currDirectory) {
         try {
             File directory = new File(currDirectory + "/" + directoryName);
             if (!directory.exists()) {
                 if (directory.mkdirs()) {
-                    Optional<Folder> parentFolder = folderController.findFolderIdByPath(currDirectory);
+                    Optional<Folder> parentFolder = folderController.findFolderIdByPath(directory.getParent());
                     User user=userController.findByUsername(UserSessionManager.getUserSession().getUsername() !=null ?
                             UserSessionManager.getUserSession().getUsername() : null);
                     if(parentFolder.isPresent()){
                         Folder folder=new Folder();
                         folder.setParentFolder(parentFolder.get());
                         folder.setIsPublic(true);
-                        folder.setFolderName(directoryName);
+                        folder.setFolderName(directory.getName());
                         folder.setOwner(user);
                         saveDirectory(folder);
                     }
@@ -67,14 +68,15 @@ public class DirectoryHandleImpl implements DirectoryHandle {
     }
 
     @Override
+    @FolderOwnerShip(action = AccessType.WRITE)
     public void removeDirectory(PrintWriter out,String directoryName, String currDirectory) {
         try {
             File directory = new File(currDirectory + "/" + directoryName);
             if (directory.exists() && directory.isDirectory()) {
                 if (Objects.requireNonNull(directory.list()).length == 0) {
-                    Optional<Folder> parentFolder = folderController.findFolderIdByPath(currDirectory);
+                    Optional<Folder> parentFolder = folderController.findFolderIdByPath(directory.getParent());
                     if(parentFolder.isPresent()){
-                        Optional<Folder> folder=folderController.findFolderByFolderNameAndParentFolder(directoryName,
+                        Optional<Folder> folder=folderController.findFolderByFolderNameAndParentFolder(directory.getName(),
                                 parentFolder.get());
                         if(folder.isPresent()){
                             deleteDirectory(folder.get());
@@ -94,6 +96,7 @@ public class DirectoryHandleImpl implements DirectoryHandle {
     }
 
     @Override
+    @FolderOwnerShip(action = AccessType.READ)
     public void changeWorkingDirectory(PrintWriter out, String directoryName, UserSession userSession) {
         try {
             String currentDirectory = userSession.getCurrDirectory();

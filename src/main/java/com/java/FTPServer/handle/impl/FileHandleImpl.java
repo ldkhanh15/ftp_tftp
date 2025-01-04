@@ -1,5 +1,6 @@
 package com.java.FTPServer.handle.impl;
 
+import com.java.FTPServer.anotation.FolderOwnerShip;
 import com.java.FTPServer.enums.ResponseCode;
 import com.java.FTPServer.enums.TransferType;
 import com.java.FTPServer.handle.FileHandle;
@@ -8,6 +9,7 @@ import com.java.FTPServer.ulti.UserSessionManager;
 import com.java.controller.FileController;
 import com.java.controller.FolderController;
 import com.java.controller.UserController;
+import com.java.enums.AccessType;
 import com.java.model.Folder;
 import com.java.model.User;
 import com.java.service.FileService;
@@ -29,6 +31,7 @@ public class FileHandleImpl implements FileHandle {
     private final UserController userController;
     private UserSession userSession;
     @Override
+    @FolderOwnerShip(action = AccessType.WRITE)
     public void uploadFile(PrintWriter out,String fileName,  UserSession userSession) {
         this.userSession= UserSessionManager.getUserSession();
         File f = null;
@@ -55,7 +58,9 @@ public class FileHandleImpl implements FileHandle {
         connectionHandle.closeDataConnection();
     }
     private void saveFile(File f){
-        Optional<Folder> folder=folderController.findFolderIdByPath(userSession.getCurrDirectory());
+        String filePath=f.getParent();
+
+        Optional<Folder> folder=folderController.findFolderIdByPath(filePath);
         User user=userController.findByUsername(UserSessionManager.getUserSession().getUsername());
         if(folder.isPresent()){
             com.java.model.File file=new com.java.model.File(f.getName(),f.getPath(),f.length(),
@@ -82,6 +87,7 @@ public class FileHandleImpl implements FileHandle {
     }
 
     @Override
+    @FolderOwnerShip(action = AccessType.WRITE)
     public void downloadFile(PrintWriter out,String fileName,  UserSession userSession) {
         this.userSession=userSession;
         File f = new File(userSession.getCurrDirectory() + "/" + fileName);
@@ -105,6 +111,7 @@ public class FileHandleImpl implements FileHandle {
     }
 
     @Override
+    @FolderOwnerShip(action = AccessType.WRITE)
     public void appendToFile( PrintWriter out,String fileName, UserSession userSession) {
         this.userSession=userSession;
         File f = null;
@@ -146,6 +153,7 @@ public class FileHandleImpl implements FileHandle {
     }
 
     @Override
+    @FolderOwnerShip(action = AccessType.WRITE)
     public void deleteFile(PrintWriter out,String fileName,  UserSession userSession) {
         this.userSession=userSession;
         if (fileName == null || fileName.trim().isEmpty()){
