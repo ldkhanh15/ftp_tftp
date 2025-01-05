@@ -12,4 +12,5 @@ public class FolderDTO {
     private String folderName;
     private Long ownerId;
     private String ownerUsername;
+    private boolean isPublic;
 }

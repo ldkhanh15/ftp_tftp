@@ -171,6 +171,11 @@ public class FolderServiceImpl implements FolderService {
             }
 
             AccessType requiredAccess = (i == folderNames.length - 1) ? accessType : AccessType.READ;
+            if(requiredAccess.equals(AccessType.READ)){
+                if(currentFolder.isPublic()){
+                    return true;
+                }
+            }
             if (!hasAccess(user, currentFolder, requiredAccess)) {
                 return false;
             }
